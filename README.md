@@ -209,16 +209,7 @@ create table generations (
   created_at timestamp default now()
 );
 ```
-
-## 🙏 Credits
-
-- UI inspired by modern SaaS platforms
-- Icons by [Lucide React](https://lucide.dev)
-- Animations powered by CSS and Framer Motion
-
-## 📄 License
-
-MIT License © 2024 CreatorOS AI
+workflow retry
 
 ---
 
