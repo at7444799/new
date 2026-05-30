@@ -2,16 +2,50 @@ name: Auto Post AI Influencer
 
 on:
   workflow_dispatch:
+    inputs:
+      slot:
+        description: "Post type"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - morning
+          - evening
+          - weekend
+
   schedule:
-    - cron: "0 */6 * * *"   # runs every 6 hours
+    # Morning post: 8:30 AM India time
+    - cron: "0 3 * * *"
+
+    # Evening post: 8:30 PM India time
+    - cron: "0 15 * * *"
+
+    # Weekend post: Saturday/Sunday 11:00 AM India time
+    - cron: "30 5 * * 6,0"
+
+permissions:
+  contents: write
 
 jobs:
   auto-post:
     runs-on: ubuntu-latest
 
+    env:
+      FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+      FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+      IG_USER_ID: ${{ secrets.IG_USER_ID }}
+      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+      NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
+      MANUAL_SLOT: ${{ github.event.inputs.slot }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_REF_NAME: ${{ github.ref_name }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,11 +56,12 @@ jobs:
         run: npm install
 
       - name: Run auto poster
-        env:
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
-          INSTAGRAM_BUSINESS_ID: ${{ secrets.INSTAGRAM_BUSINESS_ID }}
-          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
-          META_APP_ID: ${{ secrets.META_APP_ID }}
-          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
         run: npm run auto-post
+
+      - name: Commit deleted posted images and history
+        run: |
+          git config user.name "ai-influencer-bot"
+          git config user.email "actions@github.com"
+          git add media data || true
+          git commit -m "Remove posted media and update history" || echo "No changes to commit"
+          git push
