@@ -7,7 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "cloudinary-test": "node scripts/cloudinary-test.js",
-    "auto-post": "node scripts/auto-post.js"
+    "auto-post:prepare": "node scripts/auto-post.js --prepare-only",
+    "auto-post:publish": "node scripts/auto-post.js --publish-only"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -15,7 +16,8 @@
     "typescript": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "cloudinary": "^2.5.1"
+    "cloudinary": "^2.5.1",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {}
 }
