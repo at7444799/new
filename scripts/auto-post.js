@@ -20,9 +20,11 @@ function log(message) {
 
 function getEnv(name, required = true, fallback = "") {
   const value = process.env[name] || fallback;
+
   if (required && !value) {
     throw new Error(`Missing GitHub Secret / environment variable: ${name}`);
   }
+
   return value;
 }
 
@@ -36,7 +38,11 @@ function ensureFiles() {
   }
 
   if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [] }, null, 2), "utf8");
+    fs.writeFileSync(
+      HISTORY_FILE,
+      JSON.stringify({ posted: [] }, null, 2),
+      "utf8"
+    );
   }
 
   if (!fs.existsSync(PENDING_FILE)) {
@@ -46,6 +52,7 @@ function ensureFiles() {
 
 function loadHistory() {
   ensureFiles();
+
   try {
     return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
   } catch {
@@ -59,6 +66,7 @@ function saveHistory(history) {
 
 function loadPending() {
   ensureFiles();
+
   try {
     return JSON.parse(fs.readFileSync(PENDING_FILE, "utf8"));
   } catch {
@@ -105,7 +113,9 @@ function slotFolder(slot) {
 }
 
 function findImages(folder) {
-  if (!fs.existsSync(folder)) return [];
+  if (!fs.existsSync(folder)) {
+    return [];
+  }
 
   const items = fs.readdirSync(folder, { withFileTypes: true });
   const images = [];
@@ -185,9 +195,11 @@ async function graphGet(endpoint, params = {}) {
   const token = getEnv("FB_PAGE_ACCESS_TOKEN");
 
   const url = new URL(`${GRAPH_URL}/${endpoint.replace(/^\/+/, "")}`);
+
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.append(key, String(value));
   }
+
   url.searchParams.append("access_token", token);
 
   const response = await fetch(url);
@@ -204,13 +216,98 @@ function fallbackCaption(slot) {
   const captions = {
     morning:
       "New day, new glow ✨ Soft morning energy with main character confidence.\n\n#TaraSuri #MorningVibes #DigitalCreator #InfluencerLife #LifestyleCreator #FashionVibes #DelhiInfluencer #PhotoDump #AestheticVibes #ExplorePage #TrendingNow #CreatorLife",
+
     evening:
       "Night mood unlocked ✨ Little glam, little chaos, full confidence.\n\n#TaraSuri #NightLife #EveningVibes #DigitalCreator #InfluencerLife #FashionVibes #LifestyleCreator #DelhiInfluencer #PhotoDump #AestheticVibes #ExplorePage #TrendingNow",
+
     weekend:
       "Weekend scenes hit different ✨ Travel, vibes and main character energy.\n\n#TaraSuri #WeekendVibes #TravelVibes #DigitalCreator #InfluencerLife #LifestyleCreator #FashionVibes #PhotoDump #AestheticVibes #ExplorePage #TrendingNow #CreatorLife"
   };
 
   return captions[slot] || captions.morning;
+}
+
+async function analyzePhotoWithVision(imagePaths) {
+  const apiKey = getEnv("NVIDIA_API_KEY", false);
+
+  if (!apiKey) {
+    return "No visual analysis available because NVIDIA_API_KEY is missing.";
+  }
+
+  const visionModel =
+    process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
+
+  const imageContent = imagePaths.map((imagePath) => ({
+    type: "image_url",
+    image_url: {
+      url: rawGithubUrl(imagePath)
+    }
+  }));
+
+  const prompt = `
+Look carefully at these influencer photos.
+
+Describe:
+- background/location
+- outfit style
+- mood/vibe
+- colors
+- pose/body language
+- whether it feels like morning, evening, travel, party, cafe, office, home, or casual lifestyle
+- best caption angle
+- hashtags that match the actual photo
+
+Safety:
+- Do not identify any real person.
+- Do not use adult or explicit wording.
+- Do not describe private body parts.
+- Keep the description useful for writing an Instagram/Facebook caption.
+`;
+
+  try {
+    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: visionModel,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: prompt
+              },
+              ...imageContent
+            ]
+          }
+        ],
+        temperature: 0.4,
+        max_tokens: 600
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.choices) {
+      log(`NVIDIA vision error: ${JSON.stringify(data)}`);
+      return "No visual analysis available.";
+    }
+
+    const analysis = data.choices[0].message.content.trim();
+
+    if (!analysis) {
+      return "No visual analysis available.";
+    }
+
+    return analysis;
+  } catch (error) {
+    log(`NVIDIA vision failed: ${error.message}`);
+    return "No visual analysis available.";
+  }
 }
 
 async function generateCaption(slot, imagePaths) {
@@ -222,22 +319,33 @@ async function generateCaption(slot, imagePaths) {
   }
 
   const imageNames = imagePaths.map((p) => path.basename(p)).join(", ");
+  const visualAnalysis = await analyzePhotoWithVision(imagePaths);
+
+  log("Photo visual analysis:");
+  log(visualAnalysis);
 
   const prompt = `
 Create one viral social media caption for an influencer named Tara Suri.
 
-Post type: ${slot}
+Post type selected by schedule: ${slot}
 Images: ${imageNames}
 
-Rules:
+Photo analysis:
+${visualAnalysis}
+
+Caption rules:
+- Caption must match the actual photo vibe, outfit, background, color, and mood
 - Hinglish + English mix
 - Stylish influencer tone
+- Natural, not robotic
 - Suitable for Instagram and Facebook
 - No adult explicit content
 - Do not say AI-generated
 - Do not claim fake brand partnership
-- Add 12 to 18 hashtags
-- Return only caption text
+- Do not identify any real person
+- Do not mention "photo analysis"
+- Add 12 to 18 hashtags related to the actual photo
+- Return only the final caption text
 `;
 
   try {
@@ -252,7 +360,8 @@ Rules:
         messages: [
           {
             role: "system",
-            content: "You write viral Instagram and Facebook captions."
+            content:
+              "You write viral Instagram and Facebook captions based on visual photo analysis."
           },
           {
             role: "user",
@@ -260,20 +369,26 @@ Rules:
           }
         ],
         temperature: 0.9,
-        max_tokens: 350
+        max_tokens: 380
       })
     });
 
     const data = await response.json();
 
     if (!response.ok || !data.choices) {
-      log(`NVIDIA error: ${JSON.stringify(data)}`);
+      log(`NVIDIA caption error: ${JSON.stringify(data)}`);
       return fallbackCaption(slot);
     }
 
-    return data.choices[0].message.content.trim() || fallbackCaption(slot);
+    const caption = data.choices[0].message.content.trim();
+
+    if (!caption) {
+      return fallbackCaption(slot);
+    }
+
+    return caption;
   } catch (error) {
-    log(`NVIDIA failed: ${error.message}`);
+    log(`NVIDIA caption failed: ${error.message}`);
     return fallbackCaption(slot);
   }
 }
@@ -282,10 +397,16 @@ async function testAccounts() {
   const fbPageId = getEnv("FB_PAGE_ID");
   const igUserId = getEnv("IG_USER_ID");
 
-  const fb = await graphGet(fbPageId, { fields: "id,name" });
+  const fb = await graphGet(fbPageId, {
+    fields: "id,name"
+  });
+
   log(`Facebook Page OK: ${JSON.stringify(fb)}`);
 
-  const ig = await graphGet(igUserId, { fields: "id,username" });
+  const ig = await graphGet(igUserId, {
+    fields: "id,username"
+  });
+
   log(`Instagram OK: ${JSON.stringify(ig)}`);
 }
 
@@ -303,14 +424,21 @@ async function createInstagramSafeImage(sourcePath, outputPath) {
       brightness: 0.92,
       saturation: 1
     })
-    .jpeg({ quality: 92 })
+    .jpeg({
+      quality: 92
+    })
     .toBuffer();
 
   const foregroundBuffer = await source
     .clone()
     .resize(1080, 1350, {
       fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
+      background: {
+        r: 0,
+        g: 0,
+        b: 0,
+        alpha: 0
+      }
     })
     .png()
     .toBuffer();
@@ -322,7 +450,9 @@ async function createInstagramSafeImage(sourcePath, outputPath) {
         gravity: "center"
       }
     ])
-    .jpeg({ quality: 94 })
+    .jpeg({
+      quality: 94
+    })
     .toFile(outputPath);
 }
 
@@ -333,6 +463,7 @@ async function preparePendingPost() {
   log(`Selected slot: ${slot}`);
 
   const originals = pickTwoImages(slot);
+
   const caption = await generateCaption(slot, originals);
 
   const stamp = Date.now();
@@ -340,7 +471,9 @@ async function preparePendingPost() {
 
   for (let i = 0; i < originals.length; i++) {
     const outputPath = path.join(IG_READY_ROOT, `${slot}_${stamp}_${i + 1}.jpg`);
+
     await createInstagramSafeImage(originals[i], outputPath);
+
     instagramProcessed.push(outputPath);
     log(`Created Instagram-safe image: ${outputPath}`);
   }
@@ -354,6 +487,7 @@ async function preparePendingPost() {
   };
 
   savePending(pending);
+
   log("Pending post saved.");
 }
 
@@ -394,6 +528,7 @@ async function publishInstagramCarousel(imageUrls, caption) {
   });
 
   log(`Instagram published: ${JSON.stringify(published)}`);
+
   return published;
 }
 
@@ -415,7 +550,9 @@ async function publishFacebookMultiPhoto(imageUrls, caption) {
     log(`Facebook unpublished photo uploaded: ${photo.id}`);
   }
 
-  const params = { message: caption };
+  const params = {
+    message: caption
+  };
 
   photoIds.forEach((photoId, index) => {
     params[`attached_media[${index}]`] = JSON.stringify({
@@ -426,6 +563,7 @@ async function publishFacebookMultiPhoto(imageUrls, caption) {
   const post = await graphPost(`${fbPageId}/feed`, params);
 
   log(`Facebook published: ${JSON.stringify(post)}`);
+
   return post;
 }
 
@@ -465,6 +603,7 @@ function updateHistory(slot, originalPaths, instagramPaths, igResult, fbResult) 
 
 async function publishPendingPost() {
   ensureFiles();
+
   await testAccounts();
 
   const pending = loadPending();
@@ -496,7 +635,6 @@ async function publishPendingPost() {
   log("Generated caption:");
   log(caption);
 
-  // Facebook first, then Instagram
   const fbResult = await publishFacebookMultiPhoto(facebookUrls, caption);
   const igResult = await publishInstagramCarousel(instagramUrls, caption);
 
@@ -511,6 +649,7 @@ async function publishPendingPost() {
   }
 
   clearPending();
+
   log("Posting complete. Originals + processed files deleted.");
 }
 
