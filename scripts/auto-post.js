@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 const GRAPH_VERSION = "v25.0";
 const GRAPH_URL = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -8,11 +12,13 @@ const GRAPH_URL = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const ROOT = process.cwd();
 const MEDIA_ROOT = path.join(ROOT, "media");
 const IG_READY_ROOT = path.join(MEDIA_ROOT, "_ig_ready");
+const REELS_ROOT = path.join(MEDIA_ROOT, "_reels");
 const DATA_ROOT = path.join(ROOT, "data");
 const HISTORY_FILE = path.join(DATA_ROOT, "posted_history.json");
 const PENDING_FILE = path.join(DATA_ROOT, "pending_post.json");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".aac", ".wav"];
 
 function log(message) {
   console.log(`[BOT] ${message}`);
@@ -20,29 +26,21 @@ function log(message) {
 
 function getEnv(name, required = true, fallback = "") {
   const value = process.env[name] || fallback;
-
   if (required && !value) {
     throw new Error(`Missing GitHub Secret / environment variable: ${name}`);
   }
-
   return value;
 }
 
 function ensureFiles() {
-  if (!fs.existsSync(DATA_ROOT)) {
-    fs.mkdirSync(DATA_ROOT, { recursive: true });
-  }
-
-  if (!fs.existsSync(IG_READY_ROOT)) {
-    fs.mkdirSync(IG_READY_ROOT, { recursive: true });
+  for (const dir of [DATA_ROOT, IG_READY_ROOT, REELS_ROOT]) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 
   if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(
-      HISTORY_FILE,
-      JSON.stringify({ posted: [] }, null, 2),
-      "utf8"
-    );
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [] }, null, 2), "utf8");
   }
 
   if (!fs.existsSync(PENDING_FILE)) {
@@ -52,7 +50,6 @@ function ensureFiles() {
 
 function loadHistory() {
   ensureFiles();
-
   try {
     return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
   } catch {
@@ -66,7 +63,6 @@ function saveHistory(history) {
 
 function loadPending() {
   ensureFiles();
-
   try {
     return JSON.parse(fs.readFileSync(PENDING_FILE, "utf8"));
   } catch {
@@ -112,32 +108,29 @@ function slotFolder(slot) {
   return path.join(MEDIA_ROOT, slot);
 }
 
-function findImages(folder) {
-  if (!fs.existsSync(folder)) {
-    return [];
-  }
+function findFiles(folder, extensions) {
+  if (!fs.existsSync(folder)) return [];
 
+  const files = [];
   const items = fs.readdirSync(folder, { withFileTypes: true });
-  const images = [];
 
   for (const item of items) {
     const fullPath = path.join(folder, item.name);
 
     if (item.isFile()) {
       const ext = path.extname(item.name).toLowerCase();
-
-      if (IMAGE_EXTENSIONS.includes(ext) && !item.name.startsWith(".")) {
-        images.push(fullPath);
+      if (extensions.includes(ext) && !item.name.startsWith(".")) {
+        files.push(fullPath);
       }
     }
   }
 
-  return images.sort();
+  return files.sort();
 }
 
 function pickTwoImages(slot) {
   const folder = slotFolder(slot);
-  const images = findImages(folder);
+  const images = findFiles(folder, IMAGE_EXTENSIONS);
 
   if (images.length < 2) {
     throw new Error(`Need at least 2 images in ${folder}. Found ${images.length}.`);
@@ -147,6 +140,20 @@ function pickTwoImages(slot) {
   const selected = shuffled.slice(0, 2);
 
   log(`Selected images: ${selected.join(", ")}`);
+  return selected;
+}
+
+function pickMusic() {
+  const musicFolder = path.join(MEDIA_ROOT, "music");
+  const tracks = findFiles(musicFolder, MUSIC_EXTENSIONS);
+
+  if (tracks.length === 0) {
+    log("No music found in media/music/. Reel creation will be skipped.");
+    return null;
+  }
+
+  const selected = tracks[Math.floor(Math.random() * tracks.length)];
+  log(`Selected music: ${selected}`);
   return selected;
 }
 
@@ -212,16 +219,25 @@ async function graphGet(endpoint, params = {}) {
   return data;
 }
 
+function getRecentCaptions(limit = 5) {
+  const history = loadHistory();
+
+  if (!Array.isArray(history.posted)) return [];
+
+  return history.posted
+    .filter((item) => item.caption && typeof item.caption === "string")
+    .slice(-limit)
+    .map((item) => item.caption);
+}
+
 function fallbackCaption(slot) {
   const captions = {
     morning:
-      "New day, new glow ✨ Soft morning energy with main character confidence.\n\n#TaraSuri #MorningVibes #DigitalCreator #InfluencerLife #LifestyleCreator #FashionVibes #DelhiInfluencer #PhotoDump #AestheticVibes #ExplorePage #TrendingNow #CreatorLife",
-
+      "Soft start, clean mood. ✨\n\n#TaraSuri #MorningVibes #CleanGirlAesthetic #LifestyleCreator #SoftGlow #CreatorLife",
     evening:
-      "Night mood unlocked ✨ Little glam, little chaos, full confidence.\n\n#TaraSuri #NightLife #EveningVibes #DigitalCreator #InfluencerLife #FashionVibes #LifestyleCreator #DelhiInfluencer #PhotoDump #AestheticVibes #ExplorePage #TrendingNow",
-
+      "Evening light. Calm energy. ✨\n\n#TaraSuri #EveningVibes #SoftGlam #LifestyleCreator #NightMood #CreatorLife",
     weekend:
-      "Weekend scenes hit different ✨ Travel, vibes and main character energy.\n\n#TaraSuri #WeekendVibes #TravelVibes #DigitalCreator #InfluencerLife #LifestyleCreator #FashionVibes #PhotoDump #AestheticVibes #ExplorePage #TrendingNow #CreatorLife"
+      "Weekend mood, simple and free. ✨\n\n#TaraSuri #WeekendVibes #TravelMood #LifestyleCreator #AestheticVibes #CreatorLife"
   };
 
   return captions[slot] || captions.morning;
@@ -297,13 +313,7 @@ Safety:
       return "No visual analysis available.";
     }
 
-    const analysis = data.choices[0].message.content.trim();
-
-    if (!analysis) {
-      return "No visual analysis available.";
-    }
-
-    return analysis;
+    return data.choices[0].message.content.trim() || "No visual analysis available.";
   } catch (error) {
     log(`NVIDIA vision failed: ${error.message}`);
     return "No visual analysis available.";
@@ -320,12 +330,18 @@ async function generateCaption(slot, imagePaths) {
 
   const imageNames = imagePaths.map((p) => path.basename(p)).join(", ");
   const visualAnalysis = await analyzePhotoWithVision(imagePaths);
+  const recentCaptions = getRecentCaptions(5);
 
   log("Photo visual analysis:");
   log(visualAnalysis);
 
+  const recentCaptionText =
+    recentCaptions.length > 0
+      ? recentCaptions.map((caption, index) => `${index + 1}. ${caption}`).join("\n")
+      : "No previous captions yet.";
+
   const prompt = `
-Create one viral social media caption for an influencer named Tara Suri.
+Create one short clean influencer caption for an influencer named Tara Suri.
 
 Post type selected by schedule: ${slot}
 Images: ${imageNames}
@@ -333,19 +349,27 @@ Images: ${imageNames}
 Photo analysis:
 ${visualAnalysis}
 
-Caption rules:
-- Caption must match the actual photo vibe, outfit, background, color, and mood
-- Hinglish + English mix
-- Stylish influencer tone
-- Natural, not robotic
-- Suitable for Instagram and Facebook
+Recent captions:
+${recentCaptionText}
+
+Caption style:
+- Short: 1 or 2 lines only
+- Clean influencer vibe
+- Soft, stylish, natural, confident
+- Hinglish + English mix is okay, but keep it classy
+- Not too professional, not too childish
+- No long paragraph
+- No robotic CTA
+- No repeated old line
+- Keep Tara Suri's personality consistent with recent captions
+- Caption must match actual photo vibe, outfit, background, color, and mood
+- Use only 5 to 9 hashtags
+- Hashtags must relate to actual photo
 - No adult explicit content
 - Do not say AI-generated
 - Do not claim fake brand partnership
 - Do not identify any real person
-- Do not mention "photo analysis"
-- Add 12 to 18 hashtags related to the actual photo
-- Return only the final caption text
+- Return only final caption text
 `;
 
   try {
@@ -361,15 +385,15 @@ Caption rules:
           {
             role: "system",
             content:
-              "You write viral Instagram and Facebook captions based on visual photo analysis."
+              "You write short, clean, natural influencer captions based on visual photo analysis and caption history."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.9,
-        max_tokens: 380
+        temperature: 0.85,
+        max_tokens: 260
       })
     });
 
@@ -382,11 +406,7 @@ Caption rules:
 
     const caption = data.choices[0].message.content.trim();
 
-    if (!caption) {
-      return fallbackCaption(slot);
-    }
-
-    return caption;
+    return caption || fallbackCaption(slot);
   } catch (error) {
     log(`NVIDIA caption failed: ${error.message}`);
     return fallbackCaption(slot);
@@ -397,16 +417,10 @@ async function testAccounts() {
   const fbPageId = getEnv("FB_PAGE_ID");
   const igUserId = getEnv("IG_USER_ID");
 
-  const fb = await graphGet(fbPageId, {
-    fields: "id,name"
-  });
-
+  const fb = await graphGet(fbPageId, { fields: "id,name" });
   log(`Facebook Page OK: ${JSON.stringify(fb)}`);
 
-  const ig = await graphGet(igUserId, {
-    fields: "id,username"
-  });
-
+  const ig = await graphGet(igUserId, { fields: "id,username" });
   log(`Instagram OK: ${JSON.stringify(ig)}`);
 }
 
@@ -424,9 +438,7 @@ async function createInstagramSafeImage(sourcePath, outputPath) {
       brightness: 0.92,
       saturation: 1
     })
-    .jpeg({
-      quality: 92
-    })
+    .jpeg({ quality: 92 })
     .toBuffer();
 
   const foregroundBuffer = await source
@@ -450,10 +462,85 @@ async function createInstagramSafeImage(sourcePath, outputPath) {
         gravity: "center"
       }
     ])
-    .jpeg({
-      quality: 94
-    })
+    .jpeg({ quality: 94 })
     .toFile(outputPath);
+}
+
+async function createReelFromPhotos(imagePaths, musicPath, outputPath) {
+  const reelFramePaths = [];
+
+  for (let i = 0; i < imagePaths.length; i++) {
+    const framePath = path.join(REELS_ROOT, `frame_${Date.now()}_${i + 1}.jpg`);
+    await createInstagramSafeImage(imagePaths[i], framePath);
+    reelFramePaths.push(framePath);
+  }
+
+  const inputArgs = [];
+
+  for (const framePath of reelFramePaths) {
+    inputArgs.push("-loop", "1", "-t", "4.5", "-i", framePath);
+  }
+
+  if (musicPath) {
+    inputArgs.push("-stream_loop", "-1", "-i", musicPath);
+  }
+
+  const filterParts = [];
+  const videoLabels = [];
+
+  for (let i = 0; i < reelFramePaths.length; i++) {
+    filterParts.push(
+      `[${i}:v]scale=1080:1350,setsar=1,format=yuv420p,` +
+        `zoompan=z='min(zoom+0.0015,1.08)':d=135:s=1080x1350:fps=30,` +
+        `pad=1080:1920:0:285:color=black[v${i}]`
+    );
+    videoLabels.push(`[v${i}]`);
+  }
+
+  filterParts.push(`${videoLabels.join("")}concat=n=${reelFramePaths.length}:v=1:a=0[outv]`);
+
+  const args = [
+    "-y",
+    ...inputArgs,
+    "-filter_complex",
+    filterParts.join(";"),
+    "-map",
+    "[outv]"
+  ];
+
+  if (musicPath) {
+    const audioIndex = reelFramePaths.length;
+    args.push("-map", `${audioIndex}:a`, "-shortest");
+  }
+
+  args.push(
+    "-t",
+    "9",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "23",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-movflags",
+    "+faststart",
+    outputPath
+  );
+
+  log("Creating Reel video with FFmpeg...");
+  await execFileAsync("ffmpeg", args, { maxBuffer: 1024 * 1024 * 10 });
+
+  for (const framePath of reelFramePaths) {
+    safeDelete(framePath);
+  }
+
+  log(`Created Reel video: ${outputPath}`);
 }
 
 async function preparePendingPost() {
@@ -463,6 +550,7 @@ async function preparePendingPost() {
   log(`Selected slot: ${slot}`);
 
   const originals = pickTwoImages(slot);
+  const music = pickMusic();
 
   const caption = await generateCaption(slot, originals);
 
@@ -471,11 +559,16 @@ async function preparePendingPost() {
 
   for (let i = 0; i < originals.length; i++) {
     const outputPath = path.join(IG_READY_ROOT, `${slot}_${stamp}_${i + 1}.jpg`);
-
     await createInstagramSafeImage(originals[i], outputPath);
-
     instagramProcessed.push(outputPath);
     log(`Created Instagram-safe image: ${outputPath}`);
+  }
+
+  let reelPath = null;
+
+  if (music) {
+    reelPath = path.join(REELS_ROOT, `${slot}_${stamp}_reel.mp4`);
+    await createReelFromPhotos(originals, music, reelPath);
   }
 
   const pending = {
@@ -483,7 +576,9 @@ async function preparePendingPost() {
     created_at: new Date().toISOString(),
     caption,
     original_images: originals.map(relativePosix),
-    instagram_images: instagramProcessed.map(relativePosix)
+    instagram_images: instagramProcessed.map(relativePosix),
+    reel_video: reelPath ? relativePosix(reelPath) : null,
+    music_used: music ? relativePosix(music) : null
   };
 
   savePending(pending);
@@ -520,15 +615,38 @@ async function publishInstagramCarousel(imageUrls, caption) {
   }
 
   log(`Instagram parent container created: ${parent.id}`);
-
   await new Promise((resolve) => setTimeout(resolve, 10000));
 
   const published = await graphPost(`${igUserId}/media_publish`, {
     creation_id: parent.id
   });
 
-  log(`Instagram published: ${JSON.stringify(published)}`);
+  log(`Instagram carousel published: ${JSON.stringify(published)}`);
+  return published;
+}
 
+async function publishInstagramReel(videoUrl, caption) {
+  const igUserId = getEnv("IG_USER_ID");
+
+  const container = await graphPost(`${igUserId}/media`, {
+    media_type: "REELS",
+    video_url: videoUrl,
+    caption
+  });
+
+  if (!container.id) {
+    throw new Error(`Instagram Reel container missing ID: ${JSON.stringify(container)}`);
+  }
+
+  log(`Instagram Reel container created: ${container.id}`);
+
+  await new Promise((resolve) => setTimeout(resolve, 25000));
+
+  const published = await graphPost(`${igUserId}/media_publish`, {
+    creation_id: container.id
+  });
+
+  log(`Instagram Reel published: ${JSON.stringify(published)}`);
   return published;
 }
 
@@ -550,9 +668,7 @@ async function publishFacebookMultiPhoto(imageUrls, caption) {
     log(`Facebook unpublished photo uploaded: ${photo.id}`);
   }
 
-  const params = {
-    message: caption
-  };
+  const params = { message: caption };
 
   photoIds.forEach((photoId, index) => {
     params[`attached_media[${index}]`] = JSON.stringify({
@@ -562,14 +678,25 @@ async function publishFacebookMultiPhoto(imageUrls, caption) {
 
   const post = await graphPost(`${fbPageId}/feed`, params);
 
-  log(`Facebook published: ${JSON.stringify(post)}`);
-
+  log(`Facebook photo post published: ${JSON.stringify(post)}`);
   return post;
+}
+
+async function publishFacebookVideo(videoUrl, caption) {
+  const fbPageId = getEnv("FB_PAGE_ID");
+
+  const video = await graphPost(`${fbPageId}/videos`, {
+    file_url: videoUrl,
+    description: caption
+  });
+
+  log(`Facebook video published: ${JSON.stringify(video)}`);
+  return video;
 }
 
 function safeDelete(filePath) {
   try {
-    if (fs.existsSync(filePath)) {
+    if (filePath && fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
       log(`Deleted file: ${filePath}`);
     }
@@ -578,7 +705,7 @@ function safeDelete(filePath) {
   }
 }
 
-function updateHistory(slot, originalPaths, instagramPaths, igResult, fbResult) {
+function updateHistory(slot, originalPaths, instagramPaths, reelPath, caption, results) {
   const history = loadHistory();
 
   if (!Array.isArray(history.posted)) {
@@ -587,23 +714,21 @@ function updateHistory(slot, originalPaths, instagramPaths, igResult, fbResult) 
 
   const now = new Date().toISOString();
 
-  for (let i = 0; i < originalPaths.length; i++) {
-    history.posted.push({
-      original_file: relativePosix(originalPaths[i]),
-      instagram_file: instagramPaths[i] ? relativePosix(instagramPaths[i]) : null,
-      slot,
-      posted_at: now,
-      instagram_result: igResult,
-      facebook_result: fbResult
-    });
-  }
+  history.posted.push({
+    slot,
+    posted_at: now,
+    caption,
+    original_files: originalPaths.map(relativePosix),
+    instagram_files: instagramPaths.map(relativePosix),
+    reel_file: reelPath ? relativePosix(reelPath) : null,
+    results
+  });
 
   saveHistory(history);
 }
 
 async function publishPendingPost() {
   ensureFiles();
-
   await testAccounts();
 
   const pending = loadPending();
@@ -614,6 +739,7 @@ async function publishPendingPost() {
 
   const originalPaths = pending.original_images.map((p) => path.join(ROOT, p));
   const instagramPaths = pending.instagram_images.map((p) => path.join(ROOT, p));
+  const reelPath = pending.reel_video ? path.join(ROOT, pending.reel_video) : null;
 
   for (const filePath of [...originalPaths, ...instagramPaths]) {
     if (!fs.existsSync(filePath)) {
@@ -621,24 +747,42 @@ async function publishPendingPost() {
     }
   }
 
-  const facebookUrls = originalPaths.map(rawGithubUrl);
-  const instagramUrls = instagramPaths.map(rawGithubUrl);
+  if (reelPath && !fs.existsSync(reelPath)) {
+    throw new Error(`Reel video missing: ${reelPath}`);
+  }
+
+  const facebookPhotoUrls = originalPaths.map(rawGithubUrl);
+  const instagramPhotoUrls = instagramPaths.map(rawGithubUrl);
+  const reelUrl = reelPath ? rawGithubUrl(reelPath) : null;
 
   log("Facebook original image URLs:");
-  facebookUrls.forEach((url) => log(url));
+  facebookPhotoUrls.forEach((url) => log(url));
 
   log("Instagram processed image URLs:");
-  instagramUrls.forEach((url) => log(url));
+  instagramPhotoUrls.forEach((url) => log(url));
+
+  if (reelUrl) {
+    log(`Reel video URL: ${reelUrl}`);
+  }
 
   const caption = pending.caption;
 
   log("Generated caption:");
   log(caption);
 
-  const fbResult = await publishFacebookMultiPhoto(facebookUrls, caption);
-  const igResult = await publishInstagramCarousel(instagramUrls, caption);
+  const results = {};
 
-  updateHistory(pending.slot, originalPaths, instagramPaths, igResult, fbResult);
+  results.facebookPhoto = await publishFacebookMultiPhoto(facebookPhotoUrls, caption);
+  results.instagramCarousel = await publishInstagramCarousel(instagramPhotoUrls, caption);
+
+  if (reelUrl) {
+    results.facebookVideo = await publishFacebookVideo(reelUrl, caption);
+    results.instagramReel = await publishInstagramReel(reelUrl, caption);
+  } else {
+    log("No Reel video found. Skipping Reel uploads.");
+  }
+
+  updateHistory(pending.slot, originalPaths, instagramPaths, reelPath, caption, results);
 
   for (const filePath of originalPaths) {
     safeDelete(filePath);
@@ -648,9 +792,13 @@ async function publishPendingPost() {
     safeDelete(filePath);
   }
 
+  if (reelPath) {
+    safeDelete(reelPath);
+  }
+
   clearPending();
 
-  log("Posting complete. Originals + processed files deleted.");
+  log("Posting complete. Used photos, processed images and reel deleted.");
 }
 
 async function main() {
