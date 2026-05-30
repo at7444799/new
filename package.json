@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "cloudinary-test": "node scripts/cloudinary-test.js"
+    "cloudinary-test": "node scripts/cloudinary-test.js",
+    "auto-post": "node scripts/auto-post.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
