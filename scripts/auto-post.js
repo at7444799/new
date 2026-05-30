@@ -1,13 +1,16 @@
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 
 const GRAPH_VERSION = "v25.0";
 const GRAPH_URL = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
 const ROOT = process.cwd();
 const MEDIA_ROOT = path.join(ROOT, "media");
+const IG_READY_ROOT = path.join(MEDIA_ROOT, "_ig_ready");
 const DATA_ROOT = path.join(ROOT, "data");
 const HISTORY_FILE = path.join(DATA_ROOT, "posted_history.json");
+const PENDING_FILE = path.join(DATA_ROOT, "pending_post.json");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
@@ -17,11 +20,9 @@ function log(message) {
 
 function getEnv(name, required = true, fallback = "") {
   const value = process.env[name] || fallback;
-
   if (required && !value) {
     throw new Error(`Missing GitHub Secret / environment variable: ${name}`);
   }
-
   return value;
 }
 
@@ -30,18 +31,21 @@ function ensureFiles() {
     fs.mkdirSync(DATA_ROOT, { recursive: true });
   }
 
+  if (!fs.existsSync(IG_READY_ROOT)) {
+    fs.mkdirSync(IG_READY_ROOT, { recursive: true });
+  }
+
   if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(
-      HISTORY_FILE,
-      JSON.stringify({ posted: [] }, null, 2),
-      "utf8"
-    );
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [] }, null, 2), "utf8");
+  }
+
+  if (!fs.existsSync(PENDING_FILE)) {
+    fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2), "utf8");
   }
 }
 
 function loadHistory() {
   ensureFiles();
-
   try {
     return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
   } catch {
@@ -51,6 +55,23 @@ function loadHistory() {
 
 function saveHistory(history) {
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), "utf8");
+}
+
+function loadPending() {
+  ensureFiles();
+  try {
+    return JSON.parse(fs.readFileSync(PENDING_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function savePending(data) {
+  fs.writeFileSync(PENDING_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+function clearPending() {
+  fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2), "utf8");
 }
 
 function indiaNow() {
@@ -84,9 +105,7 @@ function slotFolder(slot) {
 }
 
 function findImages(folder) {
-  if (!fs.existsSync(folder)) {
-    return [];
-  }
+  if (!fs.existsSync(folder)) return [];
 
   const items = fs.readdirSync(folder, { withFileTypes: true });
   const images = [];
@@ -121,12 +140,15 @@ function pickTwoImages(slot) {
   return selected;
 }
 
+function relativePosix(localPath) {
+  return path.relative(ROOT, localPath).split(path.sep).join("/");
+}
+
 function rawGithubUrl(localPath) {
   const repo = getEnv("GITHUB_REPOSITORY");
   const branch = getEnv("GITHUB_REF_NAME", false, "main");
 
-  const relative = path.relative(ROOT, localPath).split(path.sep).join("/");
-
+  const relative = relativePosix(localPath);
   const encoded = relative
     .split("/")
     .map((part) => encodeURIComponent(part))
@@ -137,7 +159,6 @@ function rawGithubUrl(localPath) {
 
 async function graphPost(endpoint, params = {}) {
   const token = getEnv("FB_PAGE_ACCESS_TOKEN");
-
   const body = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -164,11 +185,9 @@ async function graphGet(endpoint, params = {}) {
   const token = getEnv("FB_PAGE_ACCESS_TOKEN");
 
   const url = new URL(`${GRAPH_URL}/${endpoint.replace(/^\/+/, "")}`);
-
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.append(key, String(value));
   }
-
   url.searchParams.append("access_token", token);
 
   const response = await fetch(url);
@@ -185,10 +204,8 @@ function fallbackCaption(slot) {
   const captions = {
     morning:
       "New day, new glow ✨ Soft morning energy with main character confidence.\n\n#TaraSuri #MorningVibes #DigitalCreator #InfluencerLife #LifestyleCreator #FashionVibes #DelhiInfluencer #PhotoDump #AestheticVibes #ExplorePage #TrendingNow #CreatorLife",
-
     evening:
       "Night mood unlocked ✨ Little glam, little chaos, full confidence.\n\n#TaraSuri #NightLife #EveningVibes #DigitalCreator #InfluencerLife #FashionVibes #LifestyleCreator #DelhiInfluencer #PhotoDump #AestheticVibes #ExplorePage #TrendingNow",
-
     weekend:
       "Weekend scenes hit different ✨ Travel, vibes and main character energy.\n\n#TaraSuri #WeekendVibes #TravelVibes #DigitalCreator #InfluencerLife #LifestyleCreator #FashionVibes #PhotoDump #AestheticVibes #ExplorePage #TrendingNow #CreatorLife"
   };
@@ -265,22 +282,83 @@ async function testAccounts() {
   const fbPageId = getEnv("FB_PAGE_ID");
   const igUserId = getEnv("IG_USER_ID");
 
-  const fb = await graphGet(fbPageId, {
-    fields: "id,name"
-  });
-
+  const fb = await graphGet(fbPageId, { fields: "id,name" });
   log(`Facebook Page OK: ${JSON.stringify(fb)}`);
 
-  const ig = await graphGet(igUserId, {
-    fields: "id,username"
-  });
-
+  const ig = await graphGet(igUserId, { fields: "id,username" });
   log(`Instagram OK: ${JSON.stringify(ig)}`);
+}
+
+async function createInstagramSafeImage(sourcePath, outputPath) {
+  const source = sharp(sourcePath).rotate();
+
+  const backgroundBuffer = await source
+    .clone()
+    .resize(1080, 1350, {
+      fit: "cover",
+      position: "attention"
+    })
+    .blur(25)
+    .modulate({
+      brightness: 0.92,
+      saturation: 1
+    })
+    .jpeg({ quality: 92 })
+    .toBuffer();
+
+  const foregroundBuffer = await source
+    .clone()
+    .resize(1080, 1350, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    })
+    .png()
+    .toBuffer();
+
+  await sharp(backgroundBuffer)
+    .composite([
+      {
+        input: foregroundBuffer,
+        gravity: "center"
+      }
+    ])
+    .jpeg({ quality: 94 })
+    .toFile(outputPath);
+}
+
+async function preparePendingPost() {
+  ensureFiles();
+
+  const slot = detectSlot();
+  log(`Selected slot: ${slot}`);
+
+  const originals = pickTwoImages(slot);
+  const caption = await generateCaption(slot, originals);
+
+  const stamp = Date.now();
+  const instagramProcessed = [];
+
+  for (let i = 0; i < originals.length; i++) {
+    const outputPath = path.join(IG_READY_ROOT, `${slot}_${stamp}_${i + 1}.jpg`);
+    await createInstagramSafeImage(originals[i], outputPath);
+    instagramProcessed.push(outputPath);
+    log(`Created Instagram-safe image: ${outputPath}`);
+  }
+
+  const pending = {
+    slot,
+    created_at: new Date().toISOString(),
+    caption,
+    original_images: originals.map(relativePosix),
+    instagram_images: instagramProcessed.map(relativePosix)
+  };
+
+  savePending(pending);
+  log("Pending post saved.");
 }
 
 async function publishInstagramCarousel(imageUrls, caption) {
   const igUserId = getEnv("IG_USER_ID");
-
   const childIds = [];
 
   for (const imageUrl of imageUrls) {
@@ -321,7 +399,6 @@ async function publishInstagramCarousel(imageUrls, caption) {
 
 async function publishFacebookMultiPhoto(imageUrls, caption) {
   const fbPageId = getEnv("FB_PAGE_ID");
-
   const photoIds = [];
 
   for (const imageUrl of imageUrls) {
@@ -338,9 +415,7 @@ async function publishFacebookMultiPhoto(imageUrls, caption) {
     log(`Facebook unpublished photo uploaded: ${photo.id}`);
   }
 
-  const params = {
-    message: caption
-  };
+  const params = { message: caption };
 
   photoIds.forEach((photoId, index) => {
     params[`attached_media[${index}]`] = JSON.stringify({
@@ -354,14 +429,18 @@ async function publishFacebookMultiPhoto(imageUrls, caption) {
   return post;
 }
 
-function deleteImages(imagePaths) {
-  for (const imagePath of imagePaths) {
-    fs.unlinkSync(imagePath);
-    log(`Deleted used image: ${imagePath}`);
+function safeDelete(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      log(`Deleted file: ${filePath}`);
+    }
+  } catch (error) {
+    log(`Delete failed for ${filePath}: ${error.message}`);
   }
 }
 
-function updateHistory(slot, imagePaths, igResult, fbResult) {
+function updateHistory(slot, originalPaths, instagramPaths, igResult, fbResult) {
   const history = loadHistory();
 
   if (!Array.isArray(history.posted)) {
@@ -370,9 +449,10 @@ function updateHistory(slot, imagePaths, igResult, fbResult) {
 
   const now = new Date().toISOString();
 
-  for (const imagePath of imagePaths) {
+  for (let i = 0; i < originalPaths.length; i++) {
     history.posted.push({
-      file: path.relative(ROOT, imagePath).split(path.sep).join("/"),
+      original_file: relativePosix(originalPaths[i]),
+      instagram_file: instagramPaths[i] ? relativePosix(instagramPaths[i]) : null,
       slot,
       posted_at: now,
       instagram_result: igResult,
@@ -383,32 +463,73 @@ function updateHistory(slot, imagePaths, igResult, fbResult) {
   saveHistory(history);
 }
 
-async function main() {
+async function publishPendingPost() {
   ensureFiles();
-
-  const slot = detectSlot();
-  log(`Selected slot: ${slot}`);
-
   await testAccounts();
 
-  const imagePaths = pickTwoImages(slot);
-  const imageUrls = imagePaths.map(rawGithubUrl);
+  const pending = loadPending();
 
-  log("Public image URLs:");
-  imageUrls.forEach((url) => log(url));
+  if (!pending || !pending.original_images || !pending.instagram_images || !pending.caption) {
+    throw new Error("No pending post found. Run prepare step first.");
+  }
 
-  const caption = await generateCaption(slot, imagePaths);
+  const originalPaths = pending.original_images.map((p) => path.join(ROOT, p));
+  const instagramPaths = pending.instagram_images.map((p) => path.join(ROOT, p));
+
+  for (const filePath of [...originalPaths, ...instagramPaths]) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Required file missing: ${filePath}`);
+    }
+  }
+
+  const facebookUrls = originalPaths.map(rawGithubUrl);
+  const instagramUrls = instagramPaths.map(rawGithubUrl);
+
+  log("Facebook original image URLs:");
+  facebookUrls.forEach((url) => log(url));
+
+  log("Instagram processed image URLs:");
+  instagramUrls.forEach((url) => log(url));
+
+  const caption = pending.caption;
 
   log("Generated caption:");
   log(caption);
 
-  const igResult = await publishInstagramCarousel(imageUrls, caption);
-  const fbResult = await publishFacebookMultiPhoto(imageUrls, caption);
+  // Facebook first, then Instagram
+  const fbResult = await publishFacebookMultiPhoto(facebookUrls, caption);
+  const igResult = await publishInstagramCarousel(instagramUrls, caption);
 
-  updateHistory(slot, imagePaths, igResult, fbResult);
-  deleteImages(imagePaths);
+  updateHistory(pending.slot, originalPaths, instagramPaths, igResult, fbResult);
 
-  log("Done. Images posted and deleted.");
+  for (const filePath of originalPaths) {
+    safeDelete(filePath);
+  }
+
+  for (const filePath of instagramPaths) {
+    safeDelete(filePath);
+  }
+
+  clearPending();
+  log("Posting complete. Originals + processed files deleted.");
+}
+
+async function main() {
+  ensureFiles();
+
+  const args = process.argv.slice(2);
+
+  if (args.includes("--prepare-only")) {
+    await preparePendingPost();
+    return;
+  }
+
+  if (args.includes("--publish-only")) {
+    await publishPendingPost();
+    return;
+  }
+
+  throw new Error("Use --prepare-only or --publish-only");
 }
 
 main().catch((error) => {
