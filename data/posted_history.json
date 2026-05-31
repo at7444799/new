@@ -97,12 +97,31 @@
           "id": "18040062197603855"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-05-31T15:55:30.590Z",
+      "caption": "\"Coffee, calm, and a cozy corner of my own. #cozycafe #burgundylove #coffeebreak #relaxationmode #influencerlife\"",
+      "overlay_text": "",
+      "original_image": "media/reels/ChatGPT Image May 31, 2026, 05_15_22 PM.png",
+      "music_used": "media/music/music1 (19).mp3",
+      "reel_video": "media/_reels/reel_1780242888732.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "933014373106132"
+        },
+        "instagramReel": {
+          "id": "18099822383121697"
+        }
+      }
     }
   ],
   "used_music": [
     "media/music/music1 (11).mp3",
     "media/music/music1 (3).mp3",
     "media/music/music1 (13).mp3",
-    "media/music/music1 (17).mp3"
+    "media/music/music1 (17).mp3",
+    "media/music/music1 (19).mp3"
   ]
 }
