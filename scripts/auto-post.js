@@ -1,8 +1,8 @@
 // scripts/auto-post.js
 
-const fs = require("fs");
-const path = require("path");
-const { execFileSync } = require("child_process");
+import fs from "fs";
+import path from "path";
+import { execFileSync } from "child_process";
 
 const ROOT = process.cwd();
 
@@ -21,7 +21,6 @@ const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".aac", ".wav"];
-const VIDEO_EXTENSIONS = [".mp4", ".mov", ".m4v"];
 
 const FB_PAGE_ID = process.env.FB_PAGE_ID;
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
@@ -32,30 +31,9 @@ const GITHUB_REF_NAME = process.env.GITHUB_REF_NAME || "main";
 
 const MANUAL_MODE = process.env.MANUAL_MODE || "auto";
 
-// Set this only if you want overlay.
-// Example GitHub secret/env:
-// REEL_TEXT_OVERLAY=Vibes ✨
-// If empty, no overlay will be added.
+// Default: no text overlay.
+// If you add REEL_TEXT_OVERLAY secret/env, overlay becomes only one word + one emoji.
 const REEL_TEXT_OVERLAY = process.env.REEL_TEXT_OVERLAY || "";
-
-function ensureFolders() {
-  [
-    MEDIA_DIR,
-    DATA_DIR,
-    REELS_DIR,
-    MORNING_DIR,
-    EVENING_DIR,
-    MUSIC_DIR,
-    GENERATED_REELS_DIR,
-    POSTED_DIR,
-  ].forEach((dir) => {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  });
-
-  if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify([], null, 2));
-  }
-}
 
 function log(...args) {
   console.log("[BOT]", ...args);
@@ -70,14 +48,42 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function ensureFolders() {
+  const folders = [
+    MEDIA_DIR,
+    DATA_DIR,
+    REELS_DIR,
+    MORNING_DIR,
+    EVENING_DIR,
+    MUSIC_DIR,
+    GENERATED_REELS_DIR,
+    POSTED_DIR,
+  ];
+
+  for (const folder of folders) {
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+    }
+  }
+
+  if (!fs.existsSync(HISTORY_FILE)) {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify([], null, 2));
+  }
+}
+
+function normalizePath(filePath) {
+  return filePath.replace(ROOT + path.sep, "").replace(/\\/g, "/");
+}
+
 function listFiles(dir, extensions) {
   if (!fs.existsSync(dir)) return [];
 
   return fs
     .readdirSync(dir)
     .filter((file) => {
-      const full = path.join(dir, file);
-      if (!fs.statSync(full).isFile()) return false;
+      const fullPath = path.join(dir, file);
+      if (!fs.statSync(fullPath).isFile()) return false;
+
       const ext = path.extname(file).toLowerCase();
       return extensions.includes(ext);
     })
@@ -89,16 +95,13 @@ function pickRandom(files) {
   return files[Math.floor(Math.random() * files.length)];
 }
 
-function normalizePath(filePath) {
-  return filePath.replace(ROOT + path.sep, "").replace(/\\/g, "/");
-}
-
 function rawGithubUrl(relativePath) {
   if (!GITHUB_REPOSITORY) {
     fail("GITHUB_REPOSITORY env missing.");
   }
 
   const cleanPath = relativePath.replace(/\\/g, "/");
+
   const encodedPath = cleanPath
     .split("/")
     .map((part) => encodeURIComponent(part))
@@ -108,7 +111,9 @@ function rawGithubUrl(relativePath) {
 }
 
 function detectMode() {
-  if (MANUAL_MODE && MANUAL_MODE !== "auto") return MANUAL_MODE;
+  if (MANUAL_MODE && MANUAL_MODE !== "auto") {
+    return MANUAL_MODE;
+  }
 
   const now = new Date();
   const indiaTime = new Date(
@@ -120,8 +125,13 @@ function detectMode() {
 
   log(`India time detected: ${hour}:${String(minute).padStart(2, "0")}`);
 
-  if (hour >= 6 && hour <= 8) return "morning_photo";
-  if (hour >= 18 && hour <= 20) return "evening_photo";
+  if (hour >= 6 && hour <= 8) {
+    return "morning_photo";
+  }
+
+  if (hour >= 18 && hour <= 20) {
+    return "evening_photo";
+  }
 
   return "reel";
 }
@@ -137,10 +147,12 @@ function readHistory() {
 
 function writeHistory(entry) {
   const history = readHistory();
+
   history.push({
     ...entry,
     createdAt: new Date().toISOString(),
   });
+
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
 }
 
@@ -171,9 +183,7 @@ function cleanOverlayText(input) {
   if (!input || !input.trim()) return "";
 
   const emojiMatch =
-    input.match(
-      /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u
-    )?.[0] || "✨";
+    input.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u)?.[0] || "✨";
 
   const withoutEmoji = input
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
@@ -264,6 +274,7 @@ function prepareContent() {
   ensureFolders();
 
   const mode = detectMode();
+
   log("Selected mode:", mode);
 
   let prepared = {
@@ -309,6 +320,7 @@ function prepareContent() {
     }
 
     const selectedPhoto = pickRandom(photos);
+
     log("Selected morning photo:", normalizePath(selectedPhoto));
 
     prepared = {
@@ -326,6 +338,7 @@ function prepareContent() {
     }
 
     const selectedPhoto = pickRandom(photos);
+
     log("Selected evening photo:", normalizePath(selectedPhoto));
 
     prepared = {
@@ -422,6 +435,7 @@ async function publishFacebookPhoto(imageUrl, caption) {
   });
 
   log("Facebook photo published:", JSON.stringify(data));
+
   return data;
 }
 
@@ -435,6 +449,7 @@ async function publishFacebookVideo(videoUrl, caption) {
   });
 
   log("Facebook video published:", JSON.stringify(data));
+
   return data;
 }
 
@@ -448,6 +463,7 @@ async function createInstagramPhotoContainer(imageUrl, caption) {
   });
 
   log("Instagram photo container created:", data.id);
+
   return data.id;
 }
 
@@ -463,6 +479,7 @@ async function createInstagramReelContainer(videoUrl, caption) {
   });
 
   log("Instagram Reel container created:", data.id);
+
   return data.id;
 }
 
@@ -477,6 +494,7 @@ async function publishInstagramContainer(creationId) {
   });
 
   log("Instagram published:", JSON.stringify(data));
+
   return data;
 }
 
@@ -486,10 +504,6 @@ function cleanupPreparedFiles(prepared) {
   if (prepared.type === "reel") {
     removeFileSafe(path.join(ROOT, prepared.sourceImagePath));
     removeFileSafe(path.join(ROOT, prepared.videoPath));
-
-    // Music is not deleted so it can be reused.
-    // To delete music after every reel, uncomment:
-    // removeFileSafe(path.join(ROOT, prepared.sourceMusicPath));
   }
 
   if (prepared.type === "photo") {
