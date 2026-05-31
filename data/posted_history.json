@@ -79,11 +79,30 @@
           "id": "18374866018165508"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-05-31T12:19:30.989Z",
+      "caption": "\"Raat ki raani in red. City lights, my sparkle #RedHot #NightOut #Glamour #CityLights #DressToImpress #Fashionista #InstaStyle #NightVibes #GlamGlow\"",
+      "overlay_text": "",
+      "original_image": "media/reels/ChatGPT Image May 31, 2026, 05_17_33 PM.png",
+      "music_used": "media/music/music1 (17).mp3",
+      "reel_video": "media/_reels/reel_1780229930690.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "1659221915296489"
+        },
+        "instagramReel": {
+          "id": "18040062197603855"
+        }
+      }
     }
   ],
   "used_music": [
     "media/music/music1 (11).mp3",
     "media/music/music1 (3).mp3",
-    "media/music/music1 (13).mp3"
+    "media/music/music1 (13).mp3",
+    "media/music/music1 (17).mp3"
   ]
 }
