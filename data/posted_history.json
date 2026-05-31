@@ -61,10 +61,29 @@
           "id": "18143098528508744"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-05-31T12:17:10.070Z",
+      "caption": "\"Lost in city lights, found in the moment. #NightVibes #CityEscape #SoloNights #WanderLust #UrbanBliss\"",
+      "overlay_text": "",
+      "original_image": "media/reels/ChatGPT Image May 31, 2026, 05_17_05 PM.png",
+      "music_used": "media/music/music1 (13).mp3",
+      "reel_video": "media/_reels/reel_1780229789194.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "2433872603704120"
+        },
+        "instagramReel": {
+          "id": "18374866018165508"
+        }
+      }
     }
   ],
   "used_music": [
     "media/music/music1 (11).mp3",
-    "media/music/music1 (3).mp3"
+    "media/music/music1 (3).mp3",
+    "media/music/music1 (13).mp3"
   ]
 }
