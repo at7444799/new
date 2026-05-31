@@ -25,6 +25,27 @@
         "id": "1127607807107329_122099379957346999",
         "post_supports_client_mutation_id": true
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-05-31T06:04:20.781Z",
+      "caption": "\"City nights and endless drives. #citylife #nightout #carselfie #streetstyle #travelvibes\"",
+      "overlay_text": "City nights, endless dreams. Exploring the",
+      "original_image": "media/reels/ChatGPT Image May 30, 2026, 11_22_35 PM.png",
+      "music_used": "media/music/music1 (11).mp3",
+      "reel_video": "media/_reels/reel_1780207417332.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "1563671385288642"
+        },
+        "instagramReel": {
+          "id": "17922109329360884"
+        }
+      }
     }
+  ],
+  "used_music": [
+    "media/music/music1 (11).mp3"
   ]
 }
