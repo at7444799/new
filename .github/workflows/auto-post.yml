@@ -15,6 +15,9 @@ on:
           - reel
 
   schedule:
+    # GitHub cron runs in UTC.
+    # Below timings are converted from India time IST/GMT+5:30.
+
     # Morning photo: 7:00 AM India time
     - cron: "30 1 * * *"
 
@@ -36,18 +39,27 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: auto-post-ai-influencer
+  cancel-in-progress: false
+
 jobs:
   auto-post:
     runs-on: ubuntu-latest
 
     env:
+      TZ: Asia/Kolkata
+
       FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
       FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
       IG_USER_ID: ${{ secrets.IG_USER_ID }}
+
       NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
       NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
       NVIDIA_VISION_MODEL: ${{ secrets.NVIDIA_VISION_MODEL }}
-      MANUAL_MODE: ${{ github.event.inputs.mode }}
+
+      MANUAL_MODE: ${{ github.event.inputs.mode || 'auto' }}
+
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
 
@@ -56,6 +68,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: true
+          fetch-depth: 0
+
+      - name: Show trigger and time
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Manual mode: $MANUAL_MODE"
+          echo "UTC time:"
+          date -u
+          echo "India time:"
+          date
+          echo "Branch:"
+          echo "$GITHUB_REF_NAME"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -70,6 +94,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Check required folders
+        run: |
+          mkdir -p media/reels
+          mkdir -p media/morning
+          mkdir -p media/evening
+          mkdir -p media/music
+          mkdir -p media/posted
+          mkdir -p data
+
+          echo "Current media structure:"
+          find media -maxdepth 3 -type f | sort || true
+
       - name: Prepare content
         run: npm run auto-post:prepare
 
@@ -77,9 +113,16 @@ jobs:
         run: |
           git config user.name "ai-influencer-bot"
           git config user.email "actions@github.com"
+
           git add media data
-          git commit -m "Prepare influencer content" || echo "No changes to commit"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No prepared content changes to commit"
+          else
+            git commit -m "Prepare influencer content"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push
+          fi
 
       - name: Wait for GitHub raw files
         run: sleep 35
@@ -91,6 +134,13 @@ jobs:
         run: |
           git config user.name "ai-influencer-bot"
           git config user.email "actions@github.com"
+
           git add media data
-          git commit -m "Clean posted media and update history" || echo "No changes to commit"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No cleanup/history changes to commit"
+          else
+            git commit -m "Clean posted media and update history"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push
+          fi
