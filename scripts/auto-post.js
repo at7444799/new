@@ -1,566 +1,188 @@
-import fs from "fs";
-import path from "path";
-import sharp from "sharp";
-import { execFile } from "child_process";
-import { promisify } from "util";
+// scripts/auto-post.js
 
-const execFileAsync = promisify(execFile);
-
-const GRAPH_VERSION = "v25.0";
-const GRAPH_URL = `https://graph.facebook.com/${GRAPH_VERSION}`;
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
 
 const ROOT = process.cwd();
-const MEDIA_ROOT = path.join(ROOT, "media");
-const DATA_ROOT = path.join(ROOT, "data");
 
-const MORNING_DIR = path.join(MEDIA_ROOT, "morning");
-const EVENING_DIR = path.join(MEDIA_ROOT, "evening");
-const REELS_SOURCE_DIR = path.join(MEDIA_ROOT, "reels");
-const MUSIC_DIR = path.join(MEDIA_ROOT, "music");
+const MEDIA_DIR = path.join(ROOT, "media");
+const DATA_DIR = path.join(ROOT, "data");
 
-const IG_READY_ROOT = path.join(MEDIA_ROOT, "_ig_ready");
-const REELS_OUTPUT_ROOT = path.join(MEDIA_ROOT, "_reels");
+const REELS_DIR = path.join(MEDIA_DIR, "reels");
+const MORNING_DIR = path.join(MEDIA_DIR, "morning");
+const EVENING_DIR = path.join(MEDIA_DIR, "evening");
+const MUSIC_DIR = path.join(MEDIA_DIR, "music");
+const GENERATED_REELS_DIR = path.join(MEDIA_DIR, "_reels");
+const POSTED_DIR = path.join(MEDIA_DIR, "posted");
 
-const HISTORY_FILE = path.join(DATA_ROOT, "posted_history.json");
-const PENDING_FILE = path.join(DATA_ROOT, "pending_post.json");
+const PREPARED_FILE = path.join(DATA_DIR, "prepared-post.json");
+const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".aac", ".wav"];
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".m4v"];
 
-function log(message) {
-  console.log(`[BOT] ${message}`);
-}
+const FB_PAGE_ID = process.env.FB_PAGE_ID;
+const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
+const IG_USER_ID = process.env.IG_USER_ID;
 
-function getEnv(name, required = true, fallback = "") {
-  const value = process.env[name] || fallback;
-  if (required && !value) {
-    throw new Error(`Missing GitHub Secret / environment variable: ${name}`);
-  }
-  return value;
-}
+const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY;
+const GITHUB_REF_NAME = process.env.GITHUB_REF_NAME || "main";
 
-function ensureFiles() {
-  for (const dir of [
-    DATA_ROOT,
+const MANUAL_MODE = process.env.MANUAL_MODE || "auto";
+
+// Set this only if you want overlay.
+// Example GitHub secret/env:
+// REEL_TEXT_OVERLAY=Vibes ✨
+// If empty, no overlay will be added.
+const REEL_TEXT_OVERLAY = process.env.REEL_TEXT_OVERLAY || "";
+
+function ensureFolders() {
+  [
+    MEDIA_DIR,
+    DATA_DIR,
+    REELS_DIR,
     MORNING_DIR,
     EVENING_DIR,
-    REELS_SOURCE_DIR,
     MUSIC_DIR,
-    IG_READY_ROOT,
-    REELS_OUTPUT_ROOT
-  ]) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  }
+    GENERATED_REELS_DIR,
+    POSTED_DIR,
+  ].forEach((dir) => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  });
 
   if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [] }, null, 2), "utf8");
-  }
-
-  if (!fs.existsSync(PENDING_FILE)) {
-    fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2), "utf8");
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify([], null, 2));
   }
 }
 
-function loadHistory() {
-  ensureFiles();
-  try {
-    return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
-  } catch {
-    return { posted: [] };
-  }
+function log(...args) {
+  console.log("[BOT]", ...args);
 }
 
-function saveHistory(history) {
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), "utf8");
+function fail(message) {
+  console.error("[BOT] ERROR:", message);
+  process.exit(1);
 }
 
-function loadPending() {
-  ensureFiles();
-  try {
-    return JSON.parse(fs.readFileSync(PENDING_FILE, "utf8"));
-  } catch {
-    return {};
-  }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function savePending(data) {
-  fs.writeFileSync(PENDING_FILE, JSON.stringify(data, null, 2), "utf8");
+function listFiles(dir, extensions) {
+  if (!fs.existsSync(dir)) return [];
+
+  return fs
+    .readdirSync(dir)
+    .filter((file) => {
+      const full = path.join(dir, file);
+      if (!fs.statSync(full).isFile()) return false;
+      const ext = path.extname(file).toLowerCase();
+      return extensions.includes(ext);
+    })
+    .map((file) => path.join(dir, file));
 }
 
-function clearPending() {
-  fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2), "utf8");
+function pickRandom(files) {
+  if (!files.length) return null;
+  return files[Math.floor(Math.random() * files.length)];
 }
 
-function indiaNow() {
-  return new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+function normalizePath(filePath) {
+  return filePath.replace(ROOT + path.sep, "").replace(/\\/g, "/");
 }
 
-function detectMode() {
-  const manualMode = (process.env.MANUAL_MODE || "").toLowerCase().trim();
-
-  if (["morning_photo", "evening_photo", "reel"].includes(manualMode)) {
-    return manualMode;
-  }
-
-  const now = indiaNow();
-  const hour = now.getUTCHours();
-  const minute = now.getUTCMinutes();
-  const totalMinutes = hour * 60 + minute;
-
-  // India time windows
-  // 7:00 AM photo
-  if (totalMinutes >= 390 && totalMinutes <= 480) {
-    return "morning_photo";
+function rawGithubUrl(relativePath) {
+  if (!GITHUB_REPOSITORY) {
+    fail("GITHUB_REPOSITORY env missing.");
   }
 
-  // 7:30 PM photo
-  if (totalMinutes >= 1140 && totalMinutes <= 1230) {
-    return "evening_photo";
-  }
-
-  // All other scheduled runs are Reels
-  return "reel";
-}
-
-function findFiles(folder, extensions) {
-  if (!fs.existsSync(folder)) return [];
-
-  const files = [];
-  const items = fs.readdirSync(folder, { withFileTypes: true });
-
-  for (const item of items) {
-    const fullPath = path.join(folder, item.name);
-
-    if (item.isFile()) {
-      const ext = path.extname(item.name).toLowerCase();
-
-      if (extensions.includes(ext) && !item.name.startsWith(".")) {
-        files.push(fullPath);
-      }
-    }
-  }
-
-  return files.sort();
-}
-
-function pickOneImage(folder, label) {
-  const images = findFiles(folder, IMAGE_EXTENSIONS);
-
-  if (images.length < 1) {
-    throw new Error(`Need at least 1 image in ${folder} for ${label}. Found 0.`);
-  }
-
-  const selected = images[Math.floor(Math.random() * images.length)];
-  log(`Selected ${label} image: ${selected}`);
-  return selected;
-}
-
-function pickMusicRotation() {
-  const musicFiles = findFiles(MUSIC_DIR, MUSIC_EXTENSIONS);
-
-  if (musicFiles.length < 1) {
-    throw new Error("Need at least 1 music file inside media/music/ for Reels.");
-  }
-
-  const history = loadHistory();
-  const usedMusic = Array.isArray(history.used_music) ? history.used_music : [];
-
-  const lastMusic = usedMusic.length > 0 ? usedMusic[usedMusic.length - 1] : null;
-
-  let candidates = musicFiles;
-
-  if (musicFiles.length > 1 && lastMusic) {
-    candidates = musicFiles.filter((file) => relativePosix(file) !== lastMusic);
-  }
-
-  const selected = candidates[Math.floor(Math.random() * candidates.length)];
-  log(`Selected music: ${selected}`);
-
-  return selected;
-}
-
-function relativePosix(localPath) {
-  return path.relative(ROOT, localPath).split(path.sep).join("/");
-}
-
-function rawGithubUrl(localPath) {
-  const repo = getEnv("GITHUB_REPOSITORY");
-  const branch = getEnv("GITHUB_REF_NAME", false, "main");
-
-  const relative = relativePosix(localPath);
-  const encoded = relative
+  const cleanPath = relativePath.replace(/\\/g, "/");
+  const encodedPath = cleanPath
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/");
 
-  return `https://raw.githubusercontent.com/${repo}/${branch}/${encoded}`;
+  return `https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/${encodedPath}`;
 }
 
-async function graphPost(endpoint, params = {}) {
-  const token = getEnv("FB_PAGE_ACCESS_TOKEN");
+function detectMode() {
+  if (MANUAL_MODE && MANUAL_MODE !== "auto") return MANUAL_MODE;
 
-  const body = new URLSearchParams();
+  const now = new Date();
+  const indiaTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
 
-  for (const [key, value] of Object.entries(params)) {
-    body.append(key, String(value));
-  }
+  const hour = indiaTime.getHours();
+  const minute = indiaTime.getMinutes();
 
-  body.append("access_token", token);
+  log(`India time detected: ${hour}:${String(minute).padStart(2, "0")}`);
 
-  const response = await fetch(`${GRAPH_URL}/${endpoint.replace(/^\/+/, "")}`, {
-    method: "POST",
-    body
-  });
+  if (hour >= 6 && hour <= 8) return "morning_photo";
+  if (hour >= 18 && hour <= 20) return "evening_photo";
 
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok || data.error) {
-    throw new Error(`Graph POST error at ${endpoint}: ${JSON.stringify(data)}`);
-  }
-
-  return data;
+  return "reel";
 }
 
-async function graphGet(endpoint, params = {}) {
-  const token = getEnv("FB_PAGE_ACCESS_TOKEN");
-
-  const url = new URL(`${GRAPH_URL}/${endpoint.replace(/^\/+/, "")}`);
-
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.append(key, String(value));
-  }
-
-  url.searchParams.append("access_token", token);
-
-  const response = await fetch(url);
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok || data.error) {
-    throw new Error(`Graph GET error at ${endpoint}: ${JSON.stringify(data)}`);
-  }
-
-  return data;
-}
-
-function getRecentCaptions(limit = 15) {
-  const history = loadHistory();
-
-  if (!Array.isArray(history.posted)) return [];
-
-  return history.posted
-    .filter((item) => item.caption && typeof item.caption === "string")
-    .slice(-limit)
-    .map((item) => item.caption);
-}
-
-function fallbackCaption(mode) {
-  if (mode === "morning_photo") {
-    return "Soft start, clean mood. ✨\n\n#TaraSuri #MorningVibes #SoftGlow #LifestyleCreator #CleanGirlAesthetic";
-  }
-
-  if (mode === "evening_photo") {
-    return "Evening light, easy mood. ✨\n\n#TaraSuri #EveningVibes #SoftGlam #LifestyleCreator #NightMood";
-  }
-
-  return "A little vibe for the timeline. ✨\n\n#TaraSuri #ReelMood #LifestyleCreator #AestheticVibes #CreatorLife";
-}
-
-async function analyzePhotoWithVision(imagePath, mode) {
-  const apiKey = getEnv("NVIDIA_API_KEY", false);
-
-  if (!apiKey) {
-    return "No visual analysis available because NVIDIA_API_KEY is missing.";
-  }
-
-  const visionModel =
-    process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
-
-  const imageUrl = rawGithubUrl(imagePath);
-
-  const prompt = `
-Look carefully at this influencer photo.
-
-Post mode: ${mode}
-
-Describe:
-- background/location
-- outfit style
-- mood/vibe
-- colors
-- pose/body language
-- whether it feels like morning, evening, travel, party, cafe, office, home, or casual lifestyle
-- best short caption angle
-- 5 to 9 hashtags that match the actual photo
-
-Safety:
-- Do not identify any real person.
-- Do not use adult or explicit wording.
-- Do not describe private body parts.
-- Keep the description useful for writing a clean Instagram/Facebook influencer caption.
-`;
-
+function readHistory() {
   try {
-    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: visionModel,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: prompt
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ],
-        temperature: 0.4,
-        max_tokens: 600
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.choices) {
-      log(`NVIDIA vision error: ${JSON.stringify(data)}`);
-      return "No visual analysis available.";
-    }
-
-    return data.choices[0].message.content.trim() || "No visual analysis available.";
-  } catch (error) {
-    log(`NVIDIA vision failed: ${error.message}`);
-    return "No visual analysis available.";
+    if (!fs.existsSync(HISTORY_FILE)) return [];
+    return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
+  } catch {
+    return [];
   }
 }
 
-async function generateCaption(mode, imagePath) {
-  const apiKey = getEnv("NVIDIA_API_KEY", false);
+function writeHistory(entry) {
+  const history = readHistory();
+  history.push({
+    ...entry,
+    createdAt: new Date().toISOString(),
+  });
+  fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+}
 
-  if (!apiKey) {
-    log("NVIDIA_API_KEY missing. Using fallback caption.");
-    return fallbackCaption(mode);
-  }
-
-  const visualAnalysis = await analyzePhotoWithVision(imagePath, mode);
-  const recentCaptions = getRecentCaptions(15);
-
-  log("Photo visual analysis:");
-  log(visualAnalysis);
-
-  const recentCaptionText =
-    recentCaptions.length > 0
-      ? recentCaptions.map((caption, index) => `${index + 1}. ${caption}`).join("\n")
-      : "No previous captions yet.";
-
-  const prompt = `
-Create one short clean influencer caption for an influencer named Tara Suri.
-
-Post mode: ${mode}
-Image file: ${path.basename(imagePath)}
-
-Photo analysis:
-${visualAnalysis}
-
-Last 15 captions:
-${recentCaptionText}
-
-Rules:
-- Caption must match the actual photo vibe, outfit, background, color, and mood
-- Short: 1 or 2 lines only
-- Clean influencer vibe
-- Soft, stylish, natural, confident
-- Hinglish + English mix is okay, but keep it classy
-- Not too professional, not too childish
-- No long paragraph
-- No robotic CTA
-- Do not repeat old captions
-- Do not repeat the same hook line
-- Keep Tara Suri's personality consistent
-- Use only 5 to 9 hashtags
-- Hashtags must relate to actual photo
-- No adult explicit content
-- Do not say AI-generated
-- Do not claim fake brand partnership
-- Do not identify any real person
-- Return only final caption text
-`;
-
+function removeFileSafe(filePath) {
   try {
-    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: process.env.NVIDIA_MODEL || "meta/llama-3.1-70b-instruct",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write short, clean, natural influencer captions based on visual photo analysis and caption history."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.85,
-        max_tokens: 260
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.choices) {
-      log(`NVIDIA caption error: ${JSON.stringify(data)}`);
-      return fallbackCaption(mode);
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
-
-    return data.choices[0].message.content.trim() || fallbackCaption(mode);
-  } catch (error) {
-    log(`NVIDIA caption failed: ${error.message}`);
-    return fallbackCaption(mode);
+  } catch (err) {
+    log("Could not remove file:", filePath, err.message);
   }
 }
 
-async function generateOverlayText(mode, imagePath) {
-  const caption = await generateCaption(`overlay_${mode}`, imagePath);
+function basicCaption(mode) {
+  const captions = {
+    morning_photo:
+      "New day, new energy ✨ #morningvibes #lifestyle #dailylook #positivevibes #fashion",
+    evening_photo:
+      "Evening mood, soft lights ✨ #eveningvibes #lifestyle #streetstyle #fashion #aesthetic",
+    reel:
+      "Sipping into the moment ✨ #urbanvibes #streetstyle #fashionforward #lifestyle #reels",
+  };
 
-  const firstLine = caption
-    .split("\n")
-    .map((line) => line.trim())
-    .find((line) => line && !line.startsWith("#"));
-
-  if (!firstLine) {
-    return "Soft vibe";
-  }
-
-  return firstLine
-    .replace(/[^\p{L}\p{N}\s.,!?'✨-]/gu, "")
-    .slice(0, 42);
+  return captions[mode] || captions.reel;
 }
 
-async function testAccounts() {
-  const fbPageId = getEnv("FB_PAGE_ID");
-  const igUserId = getEnv("IG_USER_ID");
+function cleanOverlayText(input) {
+  if (!input || !input.trim()) return "";
 
-  const fb = await graphGet(fbPageId, {
-    fields: "id,name"
-  });
+  const emojiMatch =
+    input.match(
+      /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u
+    )?.[0] || "✨";
 
-  log(`Facebook Page OK: ${JSON.stringify(fb)}`);
+  const withoutEmoji = input
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[^a-zA-Z]/g, " ")
+    .trim();
 
-  const ig = await graphGet(igUserId, {
-    fields: "id,username"
-  });
+  const word = withoutEmoji.split(/\s+/)[0] || "Vibes";
 
-  log(`Instagram OK: ${JSON.stringify(ig)}`);
-}
-
-async function createInstagramSafeImage(sourcePath, outputPath) {
-  const source = sharp(sourcePath).rotate();
-
-  const backgroundBuffer = await source
-    .clone()
-    .resize(1080, 1350, {
-      fit: "cover",
-      position: "attention"
-    })
-    .blur(25)
-    .modulate({
-      brightness: 0.92,
-      saturation: 1
-    })
-    .jpeg({
-      quality: 92
-    })
-    .toBuffer();
-
-  const foregroundBuffer = await source
-    .clone()
-    .resize(1080, 1350, {
-      fit: "contain",
-      background: {
-        r: 0,
-        g: 0,
-        b: 0,
-        alpha: 0
-      }
-    })
-    .png()
-    .toBuffer();
-
-  await sharp(backgroundBuffer)
-    .composite([
-      {
-        input: foregroundBuffer,
-        gravity: "center"
-      }
-    ])
-    .jpeg({
-      quality: 94
-    })
-    .toFile(outputPath);
-}
-
-async function createReelFrame(sourcePath, outputPath) {
-  const source = sharp(sourcePath).rotate();
-
-  const backgroundBuffer = await source
-    .clone()
-    .resize(1080, 1920, {
-      fit: "cover",
-      position: "attention"
-    })
-    .blur(30)
-    .modulate({
-      brightness: 0.86,
-      saturation: 1.05
-    })
-    .jpeg({
-      quality: 90
-    })
-    .toBuffer();
-
-  const foregroundBuffer = await source
-    .clone()
-    .resize(1010, 1600, {
-      fit: "contain",
-      background: {
-        r: 0,
-        g: 0,
-        b: 0,
-        alpha: 0
-      }
-    })
-    .png()
-    .toBuffer();
-
-  await sharp(backgroundBuffer)
-    .composite([
-      {
-        input: foregroundBuffer,
-        gravity: "center"
-      }
-    ])
-    .jpeg({
-      quality: 94
-    })
-    .toFile(outputPath);
+  return `${word} ${emojiMatch}`;
 }
 
 function escapeDrawText(text) {
@@ -569,356 +191,406 @@ function escapeDrawText(text) {
     .replace(/:/g, "\\:")
     .replace(/'/g, "\\'")
     .replace(/\[/g, "\\[")
-    .replace(/\]/g, "\\]")
-    .replace(/,/g, "\\,");
+    .replace(/\]/g, "\\]");
 }
 
-async function createReelFromPhoto(imagePath, musicPath, outputPath, overlayText) {
-  const framePath = path.join(REELS_OUTPUT_ROOT, `frame_${Date.now()}.jpg`);
-  await createReelFrame(imagePath, framePath);
+function createReelVideo(imagePath, musicPath) {
+  const timestamp = Date.now();
+  const outputPath = path.join(GENERATED_REELS_DIR, `reel_${timestamp}.mp4`);
 
-  const safeText = escapeDrawText(overlayText || "Soft vibe");
+  const overlayText = cleanOverlayText(REEL_TEXT_OVERLAY);
 
-  const filter =
-    "scale=1080:1920," +
-    "zoompan=z='min(zoom+0.0012,1.08)':d=270:s=1080x1920:fps=30," +
-    "format=yuv420p," +
-    `drawtext=text='${safeText}':` +
-    "fontcolor=white:" +
-    "fontsize=54:" +
-    "box=1:" +
-    "boxcolor=black@0.35:" +
-    "boxborderw=24:" +
-    "x=(w-text_w)/2:" +
-    "y=h-300";
+  const baseVideoFilter =
+    "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p";
 
-  const args = [
-    "-y",
-    "-loop",
-    "1",
-    "-i",
-    framePath,
-    "-stream_loop",
-    "-1",
-    "-i",
-    musicPath,
-    "-t",
-    "9",
-    "-vf",
-    filter,
-    "-map",
-    "0:v",
-    "-map",
-    "1:a",
-    "-shortest",
-    "-c:v",
-    "libx264",
-    "-preset",
-    "veryfast",
-    "-crf",
-    "23",
-    "-pix_fmt",
-    "yuv420p",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "+faststart",
-    outputPath
-  ];
+  let videoFilter = baseVideoFilter;
 
-  log("Creating Reel video with FFmpeg...");
-  await execFileAsync("ffmpeg", args, {
-    maxBuffer: 1024 * 1024 * 10
-  });
+  if (overlayText) {
+    const safeText = escapeDrawText(overlayText);
 
-  safeDelete(framePath);
-
-  log(`Created Reel video: ${outputPath}`);
-}
-
-async function preparePhotoPost(mode) {
-  const folder = mode === "morning_photo" ? MORNING_DIR : EVENING_DIR;
-  const label = mode === "morning_photo" ? "morning" : "evening";
-
-  const originalImage = pickOneImage(folder, label);
-  const caption = await generateCaption(mode, originalImage);
-
-  const stamp = Date.now();
-  const instagramImage = path.join(IG_READY_ROOT, `${mode}_${stamp}.jpg`);
-
-  await createInstagramSafeImage(originalImage, instagramImage);
-
-  const pending = {
-    type: "photo",
-    mode,
-    created_at: new Date().toISOString(),
-    caption,
-    original_image: relativePosix(originalImage),
-    instagram_image: relativePosix(instagramImage)
-  };
-
-  savePending(pending);
-  log("Pending photo post saved.");
-}
-
-async function prepareReelPost() {
-  const reelImage = pickOneImage(REELS_SOURCE_DIR, "reel");
-  const music = pickMusicRotation();
-
-  const caption = await generateCaption("reel", reelImage);
-  const overlayText = await generateOverlayText("reel", reelImage);
-
-  const stamp = Date.now();
-  const reelVideo = path.join(REELS_OUTPUT_ROOT, `reel_${stamp}.mp4`);
-
-  await createReelFromPhoto(reelImage, music, reelVideo, overlayText);
-
-  const pending = {
-    type: "reel",
-    mode: "reel",
-    created_at: new Date().toISOString(),
-    caption,
-    overlay_text: overlayText,
-    original_image: relativePosix(reelImage),
-    music_used: relativePosix(music),
-    reel_video: relativePosix(reelVideo)
-  };
-
-  savePending(pending);
-  log("Pending Reel post saved.");
-}
-
-async function publishInstagramPhoto(imageUrl, caption) {
-  const igUserId = getEnv("IG_USER_ID");
-
-  const container = await graphPost(`${igUserId}/media`, {
-    image_url: imageUrl,
-    caption
-  });
-
-  if (!container.id) {
-    throw new Error(`Instagram photo container missing ID: ${JSON.stringify(container)}`);
+    videoFilter +=
+      `,drawtext=text='${safeText}'` +
+      ":fontcolor=white" +
+      ":fontsize=76" +
+      ":borderw=4" +
+      ":bordercolor=black" +
+      ":x=(w-text_w)/2" +
+      ":y=h-260";
   }
 
-  log(`Instagram photo container created: ${container.id}`);
+  log("Creating reel video...");
+  log("Overlay:", overlayText ? overlayText : "No overlay");
 
-  await new Promise((resolve) => setTimeout(resolve, 10000));
+  execFileSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-loop",
+      "1",
+      "-i",
+      imagePath,
+      "-i",
+      musicPath,
+      "-t",
+      "12",
+      "-vf",
+      videoFilter,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryfast",
+      "-pix_fmt",
+      "yuv420p",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "128k",
+      "-shortest",
+      "-movflags",
+      "+faststart",
+      outputPath,
+    ],
+    { stdio: "inherit" }
+  );
 
-  const published = await graphPost(`${igUserId}/media_publish`, {
-    creation_id: container.id
+  if (!fs.existsSync(outputPath)) {
+    fail("Reel video was not created.");
+  }
+
+  return outputPath;
+}
+
+function prepareContent() {
+  ensureFolders();
+
+  const mode = detectMode();
+  log("Selected mode:", mode);
+
+  let prepared = {
+    mode,
+    caption: basicCaption(mode),
+    createdAt: new Date().toISOString(),
+  };
+
+  if (mode === "reel") {
+    const reelImages = listFiles(REELS_DIR, IMAGE_EXTENSIONS);
+    const musicFiles = listFiles(MUSIC_DIR, MUSIC_EXTENSIONS);
+
+    if (!reelImages.length) {
+      fail(`Need at least 1 image in ${normalizePath(REELS_DIR)} for reel. Found 0.`);
+    }
+
+    if (!musicFiles.length) {
+      fail(`Need at least 1 music file inside ${normalizePath(MUSIC_DIR)}/ for Reels.`);
+    }
+
+    const selectedImage = pickRandom(reelImages);
+    const selectedMusic = pickRandom(musicFiles);
+
+    log("Selected reel image:", normalizePath(selectedImage));
+    log("Selected music:", normalizePath(selectedMusic));
+
+    const videoPath = createReelVideo(selectedImage, selectedMusic);
+
+    prepared = {
+      ...prepared,
+      type: "reel",
+      sourceImagePath: normalizePath(selectedImage),
+      sourceMusicPath: normalizePath(selectedMusic),
+      videoPath: normalizePath(videoPath),
+    };
+  }
+
+  if (mode === "morning_photo") {
+    const photos = listFiles(MORNING_DIR, IMAGE_EXTENSIONS);
+
+    if (!photos.length) {
+      fail(`Need at least 1 image inside ${normalizePath(MORNING_DIR)}/`);
+    }
+
+    const selectedPhoto = pickRandom(photos);
+    log("Selected morning photo:", normalizePath(selectedPhoto));
+
+    prepared = {
+      ...prepared,
+      type: "photo",
+      sourceImagePath: normalizePath(selectedPhoto),
+    };
+  }
+
+  if (mode === "evening_photo") {
+    const photos = listFiles(EVENING_DIR, IMAGE_EXTENSIONS);
+
+    if (!photos.length) {
+      fail(`Need at least 1 image inside ${normalizePath(EVENING_DIR)}/`);
+    }
+
+    const selectedPhoto = pickRandom(photos);
+    log("Selected evening photo:", normalizePath(selectedPhoto));
+
+    prepared = {
+      ...prepared,
+      type: "photo",
+      sourceImagePath: normalizePath(selectedPhoto),
+    };
+  }
+
+  fs.writeFileSync(PREPARED_FILE, JSON.stringify(prepared, null, 2));
+
+  log("Prepared content saved:", normalizePath(PREPARED_FILE));
+  log("Prepared data:", prepared);
+}
+
+async function graphGet(url) {
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (data.error) {
+    throw new Error(JSON.stringify(data.error));
+  }
+
+  return data;
+}
+
+async function graphPost(url, params = {}) {
+  const body = new URLSearchParams(params);
+
+  const res = await fetch(url, {
+    method: "POST",
+    body,
   });
 
-  log(`Instagram photo published: ${JSON.stringify(published)}`);
-  return published;
+  const data = await res.json();
+
+  if (data.error) {
+    throw new Error(JSON.stringify(data.error));
+  }
+
+  return data;
+}
+
+async function checkAccounts() {
+  if (!FB_PAGE_ID) fail("FB_PAGE_ID secret missing.");
+  if (!FB_PAGE_ACCESS_TOKEN) fail("FB_PAGE_ACCESS_TOKEN secret missing.");
+  if (!IG_USER_ID) fail("IG_USER_ID secret missing.");
+
+  const pageUrl = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}?fields=id,name&access_token=${FB_PAGE_ACCESS_TOKEN}`;
+  const igUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}?fields=id,username&access_token=${FB_PAGE_ACCESS_TOKEN}`;
+
+  const page = await graphGet(pageUrl);
+  const instagram = await graphGet(igUrl);
+
+  log("Facebook Page OK:", JSON.stringify(page));
+  log("Instagram OK:", JSON.stringify(instagram));
+}
+
+async function waitForInstagramContainer(containerId) {
+  log("Waiting for Instagram media processing...");
+
+  for (let i = 1; i <= 30; i++) {
+    const url =
+      `https://graph.facebook.com/v20.0/${containerId}` +
+      `?fields=status_code,status` +
+      `&access_token=${FB_PAGE_ACCESS_TOKEN}`;
+
+    const data = await graphGet(url);
+
+    log(`Instagram status check ${i}:`, JSON.stringify(data));
+
+    if (data.status_code === "FINISHED") {
+      log("Instagram media processing finished.");
+      return;
+    }
+
+    if (data.status_code === "ERROR") {
+      throw new Error("Instagram media processing failed: " + JSON.stringify(data));
+    }
+
+    await sleep(15000);
+  }
+
+  throw new Error("Instagram media was not ready after waiting.");
 }
 
 async function publishFacebookPhoto(imageUrl, caption) {
-  const fbPageId = getEnv("FB_PAGE_ID");
+  const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/photos`;
 
-  const photo = await graphPost(`${fbPageId}/photos`, {
+  const data = await graphPost(url, {
     url: imageUrl,
-    caption
+    caption,
+    access_token: FB_PAGE_ACCESS_TOKEN,
   });
 
-  log(`Facebook photo published: ${JSON.stringify(photo)}`);
-  return photo;
-}
-
-async function publishInstagramReel(videoUrl, caption) {
-  const igUserId = getEnv("IG_USER_ID");
-
-  const container = await graphPost(`${igUserId}/media`, {
-    media_type: "REELS",
-    video_url: videoUrl,
-    caption
-  });
-
-  if (!container.id) {
-    throw new Error(`Instagram Reel container missing ID: ${JSON.stringify(container)}`);
-  }
-
-  log(`Instagram Reel container created: ${container.id}`);
-
-  await new Promise((resolve) => setTimeout(resolve, 25000));
-
-  const published = await graphPost(`${igUserId}/media_publish`, {
-    creation_id: container.id
-  });
-
-  log(`Instagram Reel published: ${JSON.stringify(published)}`);
-  return published;
+  log("Facebook photo published:", JSON.stringify(data));
+  return data;
 }
 
 async function publishFacebookVideo(videoUrl, caption) {
-  const fbPageId = getEnv("FB_PAGE_ID");
+  const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/videos`;
 
-  const video = await graphPost(`${fbPageId}/videos`, {
+  const data = await graphPost(url, {
     file_url: videoUrl,
-    description: caption
+    description: caption,
+    access_token: FB_PAGE_ACCESS_TOKEN,
   });
 
-  log(`Facebook video published: ${JSON.stringify(video)}`);
-  return video;
+  log("Facebook video published:", JSON.stringify(data));
+  return data;
 }
 
-function safeDelete(filePath) {
-  try {
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      log(`Deleted file: ${filePath}`);
-    }
-  } catch (error) {
-    log(`Delete failed for ${filePath}: ${error.message}`);
-  }
+async function createInstagramPhotoContainer(imageUrl, caption) {
+  const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
+
+  const data = await graphPost(url, {
+    image_url: imageUrl,
+    caption,
+    access_token: FB_PAGE_ACCESS_TOKEN,
+  });
+
+  log("Instagram photo container created:", data.id);
+  return data.id;
 }
 
-function updateHistory(entry) {
-  const history = loadHistory();
+async function createInstagramReelContainer(videoUrl, caption) {
+  const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
 
-  if (!Array.isArray(history.posted)) {
-    history.posted = [];
-  }
+  const data = await graphPost(url, {
+    media_type: "REELS",
+    video_url: videoUrl,
+    caption,
+    share_to_feed: "true",
+    access_token: FB_PAGE_ACCESS_TOKEN,
+  });
 
-  if (!Array.isArray(history.used_music)) {
-    history.used_music = [];
-  }
-
-  history.posted.push(entry);
-
-  if (entry.music_used) {
-    history.used_music.push(entry.music_used);
-    history.used_music = history.used_music.slice(-20);
-  }
-
-  saveHistory(history);
+  log("Instagram Reel container created:", data.id);
+  return data.id;
 }
 
-async function publishPendingPost() {
-  ensureFiles();
-  await testAccounts();
+async function publishInstagramContainer(creationId) {
+  await waitForInstagramContainer(creationId);
 
-  const pending = loadPending();
+  const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
 
-  if (!pending || !pending.type || !pending.caption) {
-    throw new Error("No pending post found. Run prepare step first.");
+  const data = await graphPost(url, {
+    creation_id: creationId,
+    access_token: FB_PAGE_ACCESS_TOKEN,
+  });
+
+  log("Instagram published:", JSON.stringify(data));
+  return data;
+}
+
+function cleanupPreparedFiles(prepared) {
+  if (!prepared) return;
+
+  if (prepared.type === "reel") {
+    removeFileSafe(path.join(ROOT, prepared.sourceImagePath));
+    removeFileSafe(path.join(ROOT, prepared.videoPath));
+
+    // Music is not deleted so it can be reused.
+    // To delete music after every reel, uncomment:
+    // removeFileSafe(path.join(ROOT, prepared.sourceMusicPath));
   }
 
-  const caption = pending.caption;
-  const results = {};
-  const postedAt = new Date().toISOString();
-
-  log("Generated caption:");
-  log(caption);
-
-  if (pending.type === "photo") {
-    const originalPath = path.join(ROOT, pending.original_image);
-    const instagramPath = path.join(ROOT, pending.instagram_image);
-
-    if (!fs.existsSync(originalPath)) {
-      throw new Error(`Original photo missing: ${originalPath}`);
-    }
-
-    if (!fs.existsSync(instagramPath)) {
-      throw new Error(`Instagram image missing: ${instagramPath}`);
-    }
-
-    const facebookUrl = rawGithubUrl(originalPath);
-    const instagramUrl = rawGithubUrl(instagramPath);
-
-    log(`Facebook original photo URL: ${facebookUrl}`);
-    log(`Instagram processed photo URL: ${instagramUrl}`);
-
-    results.facebookPhoto = await publishFacebookPhoto(facebookUrl, caption);
-    results.instagramPhoto = await publishInstagramPhoto(instagramUrl, caption);
-
-    updateHistory({
-      type: "photo",
-      mode: pending.mode,
-      posted_at: postedAt,
-      caption,
-      original_image: pending.original_image,
-      instagram_image: pending.instagram_image,
-      results
-    });
-
-    safeDelete(originalPath);
-    safeDelete(instagramPath);
+  if (prepared.type === "photo") {
+    removeFileSafe(path.join(ROOT, prepared.sourceImagePath));
   }
 
-  if (pending.type === "reel") {
-    const originalPath = path.join(ROOT, pending.original_image);
-    const reelPath = path.join(ROOT, pending.reel_video);
+  removeFileSafe(PREPARED_FILE);
+}
 
-    if (!fs.existsSync(originalPath)) {
-      throw new Error(`Original reel photo missing: ${originalPath}`);
-    }
+async function publishContent() {
+  ensureFolders();
 
-    if (!fs.existsSync(reelPath)) {
-      throw new Error(`Reel video missing: ${reelPath}`);
-    }
+  if (!fs.existsSync(PREPARED_FILE)) {
+    fail("No prepared-post.json found. Run prepare first.");
+  }
 
-    const reelUrl = rawGithubUrl(reelPath);
+  const prepared = JSON.parse(fs.readFileSync(PREPARED_FILE, "utf8"));
 
-    log(`Reel video URL: ${reelUrl}`);
+  await checkAccounts();
 
-    results.facebookVideo = await publishFacebookVideo(reelUrl, caption);
-    results.instagramReel = await publishInstagramReel(reelUrl, caption);
+  const caption = prepared.caption || basicCaption(prepared.mode);
 
-    updateHistory({
+  if (prepared.type === "reel") {
+    const videoUrl = rawGithubUrl(prepared.videoPath);
+
+    log("Generated caption:");
+    log(`"${caption}"`);
+
+    log("Reel video URL:", videoUrl);
+
+    await publishFacebookVideo(videoUrl, caption);
+
+    const creationId = await createInstagramReelContainer(videoUrl, caption);
+
+    await publishInstagramContainer(creationId);
+
+    writeHistory({
       type: "reel",
-      mode: pending.mode,
-      posted_at: postedAt,
+      mode: prepared.mode,
       caption,
-      overlay_text: pending.overlay_text,
-      original_image: pending.original_image,
-      music_used: pending.music_used,
-      reel_video: pending.reel_video,
-      results
+      videoPath: prepared.videoPath,
+      sourceImagePath: prepared.sourceImagePath,
+      sourceMusicPath: prepared.sourceMusicPath,
+      status: "published",
     });
 
-    safeDelete(originalPath);
-    safeDelete(reelPath);
-  }
+    cleanupPreparedFiles(prepared);
 
-  clearPending();
-
-  log("Posting complete.");
-}
-
-async function main() {
-  ensureFiles();
-
-  const args = process.argv.slice(2);
-
-  if (args.includes("--prepare-only")) {
-    const mode = detectMode();
-
-    log(`Selected mode: ${mode}`);
-
-    if (mode === "morning_photo" || mode === "evening_photo") {
-      await preparePhotoPost(mode);
-      return;
-    }
-
-    if (mode === "reel") {
-      await prepareReelPost();
-      return;
-    }
-
-    throw new Error(`Unknown mode: ${mode}`);
-  }
-
-  if (args.includes("--publish-only")) {
-    await publishPendingPost();
+    log("Reel published and cleanup completed.");
     return;
   }
 
-  throw new Error("Use --prepare-only or --publish-only");
+  if (prepared.type === "photo") {
+    const imageUrl = rawGithubUrl(prepared.sourceImagePath);
+
+    log("Generated caption:");
+    log(`"${caption}"`);
+
+    log("Photo URL:", imageUrl);
+
+    await publishFacebookPhoto(imageUrl, caption);
+
+    const creationId = await createInstagramPhotoContainer(imageUrl, caption);
+
+    await publishInstagramContainer(creationId);
+
+    writeHistory({
+      type: "photo",
+      mode: prepared.mode,
+      caption,
+      sourceImagePath: prepared.sourceImagePath,
+      status: "published",
+    });
+
+    cleanupPreparedFiles(prepared);
+
+    log("Photo published and cleanup completed.");
+    return;
+  }
+
+  fail("Unknown prepared content type.");
 }
 
-main().catch((error) => {
-  console.error("[BOT] ERROR:", error.message);
+async function main() {
+  const args = process.argv.slice(2);
+
+  if (args.includes("--prepare-only")) {
+    prepareContent();
+    return;
+  }
+
+  if (args.includes("--publish-only")) {
+    await publishContent();
+    return;
+  }
+
+  prepareContent();
+  await publishContent();
+}
+
+main().catch((err) => {
+  console.error("[BOT] ERROR:", err.message);
   process.exit(1);
 });
