@@ -43,9 +43,28 @@
           "id": "17922109329360884"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-05-31T10:05:17.455Z",
+      "caption": "\"Ride, relax, repeat. City nights are the best #citylife #relaxation #casualstyle #comfortzone #selfcare\"",
+      "overlay_text": "Night drives, city lights. citylife nightd",
+      "original_image": "media/reels/ChatGPT Image May 30, 2026, 11_22_49 PM.png",
+      "music_used": "media/music/music1 (3).mp3",
+      "reel_video": "media/_reels/reel_1780221876176.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "1023115877058825"
+        },
+        "instagramReel": {
+          "id": "18143098528508744"
+        }
+      }
     }
   ],
   "used_music": [
-    "media/music/music1 (11).mp3"
+    "media/music/music1 (11).mp3",
+    "media/music/music1 (3).mp3"
   ]
 }
