@@ -187,6 +187,24 @@
           "id": "18414898852181741"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-06-01T20:48:36.954Z",
+      "caption": "\"City ki raatein, meri sparkle #CityLights #Glamour #NightVibes #PurpleHaze #Sophisticated #Confident #UrbanBliss #Nightlife #GlamGlow\"",
+      "overlay_text": "",
+      "original_image": "media/reels/ChatGPT Image May 31, 2026, 05_17_35 PM.png",
+      "music_used": "media/music/music1 (14).mp3",
+      "reel_video": "media/_reels/reel_1780346876171.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "1649097446316024"
+        },
+        "instagramReel": {
+          "id": "18477019459098406"
+        }
+      }
     }
   ],
   "used_music": [
@@ -198,6 +216,7 @@
     "media/music/music1 (12).mp3",
     "media/music/music1 (15).mp3",
     "media/music/music1 (13).mp3",
-    "media/music/music1 (11).mp3"
+    "media/music/music1 (11).mp3",
+    "media/music/music1 (14).mp3"
   ]
 }
