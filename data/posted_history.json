@@ -241,6 +241,24 @@
           "id": "18023546057664604"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-06-01T22:40:12.518Z",
+      "caption": "\"Emerald elegance over coffee #CafeCoffeeDay #EmeraldGreen #BreakfastGoals #InfluencerStyle #CoffeeLover #MorningVibes\"",
+      "overlay_text": "",
+      "original_image": "media/reels/ChatGPT Image May 31, 2026, 12_58_01 AM.png",
+      "music_used": "media/music/music1 (19).mp3",
+      "reel_video": "media/_reels/reel_1780353571941.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "976112081870303"
+        },
+        "instagramReel": {
+          "id": "17883774453579107"
+        }
+      }
     }
   ],
   "used_music": [
@@ -255,6 +273,7 @@
     "media/music/music1 (11).mp3",
     "media/music/music1 (14).mp3",
     "media/music/music1 (18).mp3",
-    "media/music/music1 (16).mp3"
+    "media/music/music1 (16).mp3",
+    "media/music/music1 (19).mp3"
   ]
 }
