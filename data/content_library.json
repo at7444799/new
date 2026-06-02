@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T22:06:18.727Z",
+  "updated_at": "2026-06-02T22:08:15.674Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -61,7 +61,8 @@
         "reject": false,
         "reason": "The image is well-lit and clear, with no explicit or private content. The women are dressed in clean and stylish outfits, and the background is a typical nightclub setting. This image would be suitable for a lifestyle or travel post."
       },
-      "used": false
+      "used": true,
+      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "6e9f6c8d43a6",
@@ -184,8 +185,9 @@
         "reject": false,
         "reason": "This image captures a fun and celebratory moment, making it suitable for a lifestyle or travel post."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "43ffc7c813f4",
@@ -216,8 +218,9 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing the women's fun and stylish night out."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "830663422818",
@@ -1074,8 +1077,9 @@
         "reject": false,
         "reason": "The image is visually appealing, with a beautiful sunset and a cozy atmosphere, making it suitable for a lifestyle or travel post."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "15e40a24ff79",
@@ -1258,8 +1262,9 @@
         "reject": false,
         "reason": "The image is well-lit and the woman's outfit is visually appealing. The car interior provides a unique and interesting background."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "0a12fc93318d",
