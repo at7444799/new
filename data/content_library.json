@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T22:29:14.218Z",
+  "updated_at": "2026-06-02T22:30:36.495Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -1068,8 +1068,9 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T22:30:36.495Z"
     },
     {
       "id": "419097487701",
