@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T17:57:16.054Z",
+  "updated_at": "2026-06-02T18:59:19.401Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -35,7 +35,7 @@
       "id": "ea1df4ab784c",
       "hash": "ea1df4ab784c59c68c6ed11409a07b8fbb577c79",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
-      "added_at": "2026-06-02T17:55:18.402Z",
+      "added_at": "2026-06-02T18:58:45.487Z",
       "source": "incoming",
       "meta": {
         "width": 1086,
@@ -125,7 +125,7 @@
       "id": "43ffc7c813f4",
       "hash": "43ffc7c813f4b1200e9b1dd21afd2fb292211a9a",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
-      "added_at": "2026-06-02T17:55:26.733Z",
+      "added_at": "2026-06-02T18:58:54.311Z",
       "source": "incoming",
       "meta": {
         "width": 1122,
@@ -900,53 +900,6 @@
       "exists": true
     },
     {
-      "id": "4d866eda879f",
-      "hash": "4d866eda879fd68e244e661223b0c784ac18f624",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_27 PM.png",
-      "added_at": "2026-06-02T12:07:28.109Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1402,
-        "height": 1122,
-        "ratio": 1.249554367201426,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A collage of 12 photos featuring a woman in various settings, including a market, cafe, beach, and temple.",
-        "categories": [
-          "morning",
-          "afternoon",
-          "evening",
-          "night",
-          "morning",
-          "morning",
-          "market",
-          "cafe",
-          "food",
-          "beach",
-          "temple",
-          "travel",
-          "girls_trip",
-          "bedroom",
-          "evening",
-          "rice_fields",
-          "lifestyle"
-        ],
-        "time_of_day": "morning",
-        "mood": "relaxed",
-        "outfit": "white dress",
-        "location": "various locations, including a market, cafe, beach, and temple",
-        "quality_score": 8,
-        "reel_score": 7,
-        "post_score": 8,
-        "reject": false,
-        "reason": "The image is visually appealing and suggests a relaxing vacation."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T17:57:16.054Z"
-    },
-    {
       "id": "97d2bd44aecb",
       "hash": "97d2bd44aecb4b48ab4c4ba52c0d0ed0c8240000",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_30 PM.png",
@@ -980,7 +933,7 @@
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_42 PM.png",
-      "added_at": "2026-06-02T17:55:31.927Z",
+      "added_at": "2026-06-02T18:59:06.936Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -989,19 +942,23 @@
         "format": "png"
       },
       "analysis": {
-        "description": "Two women in a bedroom with a large circular bed and floor-to-ceiling windows offering a stunning ocean view at sunset.",
+        "description": "Two women laughing and chatting in a bedroom with a large circular bed, overlooking the ocean at sunset.",
         "categories": [
-          "lifestyle_travel_girls_trip_bedroom_sunset"
+          "lifestyle",
+          "travel",
+          "girls_trip",
+          "bedroom",
+          "evening"
         ],
         "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "white sheets",
+        "mood": "happy",
+        "outfit": "white blankets",
         "location": "beachside villa",
         "quality_score": 8,
-        "reel_score": 7,
-        "post_score": 9,
+        "reel_score": 9,
+        "post_score": 8,
         "reject": false,
-        "reason": "The image is well-lit, and the composition is visually appealing. The sunset view and relaxed atmosphere make it suitable for a lifestyle or travel post."
+        "reason": "The image is well-lit, and the women are not showing any private body parts. The scene appears to be a peaceful and relaxing moment, which is suitable for a lifestyle/travel post."
       },
       "used": false
     },
@@ -1009,7 +966,7 @@
       "id": "69af0b75b8b4",
       "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
-      "added_at": "2026-06-02T17:55:39.968Z",
+      "added_at": "2026-06-02T18:59:13.173Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -1038,7 +995,7 @@
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_17_15 PM.png",
-      "added_at": "2026-06-02T17:55:45.676Z",
+      "added_at": "2026-06-02T18:59:19.358Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -1047,19 +1004,19 @@
         "format": "png"
       },
       "analysis": {
-        "description": "ChatGPT Image May 30, 2026, 10_17_15 PM.png lifestyle travel photo",
+        "description": "Two women lying on a circular bed in a dimly lit bedroom, laughing and chatting, with a stunning ocean view through floor-to-ceiling windows.",
         "categories": [
-          "morning"
+          "morning_afternoon_evening_night_pool_villa_market_cafe_food_beach_temple_travel_girls_trip_bedroom_sunset_rice_fields_lifestyle"
         ],
-        "time_of_day": "morning",
-        "mood": "natural travel lifestyle",
-        "outfit": "stylish vacation outfit",
-        "location": "travel location",
-        "quality_score": 7,
-        "reel_score": 6,
-        "post_score": 7,
+        "time_of_day": "evening",
+        "mood": "relaxed",
+        "outfit": "white sheets",
+        "location": "bedroom with ocean view",
+        "quality_score": 8,
+        "reel_score": 9,
+        "post_score": 8,
         "reject": false,
-        "reason": "filename and image metadata analysis"
+        "reason": "The image is well-lit, and the atmosphere is intimate and relaxing, making it suitable for a lifestyle post."
       },
       "used": false
     },
