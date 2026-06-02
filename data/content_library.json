@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T23:19:08.568Z",
+  "updated_at": "2026-06-02T23:20:38.883Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -419,8 +419,9 @@
         "reject": false,
         "reason": "The image is a peaceful and intimate moment between two women, showcasing their relaxed and comfortable lifestyle. The white tank tops and bedroom setting add to the clean and minimalist aesthetic, making it suitable for a lifestyle post."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T23:20:38.883Z"
     },
     {
       "id": "e6d3981f6c38",

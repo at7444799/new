@@ -776,6 +776,50 @@
           "id": "18077479736256539"
         }
       }
+    },
+    {
+      "type": "photo",
+      "mode": "night_photo",
+      "created_at": "2026-06-02T23:19:18.982Z",
+      "caption": "Girls trip bedtime stories White tank tops and cozy nights, Bali girls trip vibes #BaliGirlsTrip #GirlsTripVibes #BedtimeStories #CozyNights #TravelDiaries #WanderLust #ParadiseFound #TropicalVibes #FriendshipGoals #BeachLife #TravelBali",
+      "alt_text": "Two women sleeping in a bed, with one woman's arm around the other.",
+      "story_text": "Girls trip bedtime",
+      "first_comment": "",
+      "assets": [
+        "media/morning/ChatGPT Image May 30, 2026, 09_47_51 PM.png"
+      ],
+      "original_image": "media/morning/ChatGPT Image May 30, 2026, 09_47_51 PM.png",
+      "instagram_image": "media/_ig_ready/night_photo_1780442358935.jpg",
+      "manager": {
+        "selected_score": 25,
+        "analysis": {
+          "description": "Two women sleeping in a bed, with one woman's arm around the other.",
+          "categories": [
+            "lifestyle",
+            "girls_trip",
+            "bedroom"
+          ],
+          "time_of_day": "night",
+          "mood": "relaxed",
+          "outfit": "white tank tops",
+          "location": "bedroom",
+          "quality_score": 8,
+          "reel_score": 6,
+          "post_score": 7,
+          "reject": false,
+          "reason": "The image is a peaceful and intimate moment between two women, showcasing their relaxed and comfortable lifestyle. The white tank tops and bedroom setting add to the clean and minimalist aesthetic, making it suitable for a lifestyle post."
+        }
+      },
+      "posted_at": "2026-06-02T23:20:06.457Z",
+      "results": {
+        "facebookPhoto": {
+          "id": "122101982133346999",
+          "post_id": "1127607807107329_122101982157346999"
+        },
+        "instagramPhoto": {
+          "id": "18007214987869706"
+        }
+      }
     }
   ],
   "used_music": [
