@@ -1,1 +1,134 @@
-{}
+{
+  "type": "reel",
+  "mode": "reel",
+  "created_at": "2026-06-02T22:06:34.485Z",
+  "caption": "Bali nights with my girls. Laughter and champagne. #BaliGirlsTrip #NightVibes #GirlsTripVibes #TravelDiaries #WanderLust #ParadiseFound #TropicalVibes #FriendshipGoals #BeachLife #TravelBali #GirlsJustWantToHaveFun #ChampagneNights #BaliNights #GirlsNightOut",
+  "alt_text": "Two women celebrating in a nightclub with champagne.",
+  "overlay_text": "Girls' Night Out",
+  "story_text": "Bali Girls Trip Night Out",
+  "first_comment": "",
+  "assets": [
+    "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
+    "media/evening/ChatGPT Image May 27, 2026, 05_48_37 PM (2).png",
+    "media/morning/ChatGPT Image May 30, 2026, 10_26_33 PM.png",
+    "media/morning/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
+    "media/morning/ChatGPT Image May 27, 2026, 05_47_59 PM.png"
+  ],
+  "original_image": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
+  "music_used": "media/music/music1 (12).mp3",
+  "reel_video": "media/_reels/reel_1780437987745.mp4",
+  "manager": {
+    "assets": [
+      {
+        "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
+        "score": 26,
+        "analysis": {
+          "description": "Two women celebrating in a nightclub, one holding a bottle of champagne and the other holding a glass.",
+          "categories": [
+            "lifestyle",
+            "travel",
+            "girls_trip",
+            "night"
+          ],
+          "time_of_day": "night",
+          "mood": "celebratory",
+          "outfit": "denim top and white skirt, pink dress",
+          "location": "nightclub",
+          "quality_score": 8,
+          "reel_score": 9,
+          "post_score": 8,
+          "reject": false,
+          "reason": "The image is well-lit and clear, with no explicit or private content. The women are dressed in clean and stylish outfits, and the background is a typical nightclub setting. This image would be suitable for a lifestyle or travel post."
+        }
+      },
+      {
+        "path": "media/evening/ChatGPT Image May 27, 2026, 05_48_37 PM (2).png",
+        "score": 23,
+        "analysis": {
+          "description": "A woman in a pink sari, holding a rearview mirror and sitting in the back seat of a car.",
+          "categories": [
+            "lifestyle",
+            "travel",
+            "girls_trip"
+          ],
+          "time_of_day": "evening",
+          "mood": "relaxed",
+          "outfit": "pink sari with gold jewelry",
+          "location": "car interior",
+          "quality_score": 8,
+          "reel_score": 6,
+          "post_score": 7,
+          "reject": false,
+          "reason": "The image is well-lit and the woman's outfit is visually appealing. The car interior provides a unique and interesting background."
+        }
+      },
+      {
+        "path": "media/morning/ChatGPT Image May 30, 2026, 10_26_33 PM.png",
+        "score": 22,
+        "analysis": {
+          "description": "Two women in bed, laughing and enjoying each other's company, with a stunning sunset over the ocean in the background.",
+          "categories": [
+            "lifestyle",
+            "travel",
+            "girls_trip",
+            "bedroom",
+            "evening"
+          ],
+          "time_of_day": "evening",
+          "mood": "relaxed",
+          "outfit": "not visible",
+          "location": "likely a beachside villa or resort",
+          "quality_score": 8,
+          "reel_score": 6,
+          "post_score": 7,
+          "reject": false,
+          "reason": "The image is visually appealing, with a beautiful sunset and a cozy atmosphere, making it suitable for a lifestyle or travel post."
+        }
+      },
+      {
+        "path": "media/morning/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
+        "score": 20,
+        "analysis": {
+          "description": "Two women celebrating with champagne in a dimly lit bar, surrounded by glasses and bottles, with a neon sign reading 'Dom Perignon' in the background.",
+          "categories": [
+            "evening",
+            "bar",
+            "celebration",
+            "champagne",
+            "girls_trip"
+          ],
+          "time_of_day": "evening",
+          "mood": "joyful",
+          "outfit": "The woman on the left is wearing a denim corset top and a beige skirt, while the woman on the right is wearing a pink dress with a plunging neckline.",
+          "location": "a dimly lit bar",
+          "quality_score": 8,
+          "reel_score": 7,
+          "post_score": 8,
+          "reject": false,
+          "reason": "This image captures a fun and celebratory moment, making it suitable for a lifestyle or travel post."
+        }
+      },
+      {
+        "path": "media/morning/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
+        "score": 19,
+        "analysis": {
+          "description": "Four women posing for a selfie in a dimly lit room with a marble wall and a disco ball, captioned 'girls night out'",
+          "categories": [
+            "evening",
+            "girls_trip",
+            "lifestyle"
+          ],
+          "time_of_day": "evening",
+          "mood": "fun",
+          "outfit": "The women are wearing stylish outfits, including a pink jumpsuit, a brown top and black pants, a blue top and white skirt, and a gold necklace and bracelet.",
+          "location": "likely a nightclub or bar",
+          "quality_score": 8,
+          "reel_score": 6,
+          "post_score": 7,
+          "reject": false,
+          "reason": "This image is suitable for a lifestyle post, showcasing the women's fun and stylish night out."
+        }
+      }
+    ]
+  }
+}

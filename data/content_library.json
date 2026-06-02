@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T20:03:43.550Z",
+  "updated_at": "2026-06-02T22:06:18.727Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -35,7 +35,7 @@
       "id": "ea1df4ab784c",
       "hash": "ea1df4ab784c59c68c6ed11409a07b8fbb577c79",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
-      "added_at": "2026-06-02T19:59:21.140Z",
+      "added_at": "2026-06-02T22:05:38.820Z",
       "source": "incoming",
       "meta": {
         "width": 1086,
@@ -44,20 +44,22 @@
         "format": "png"
       },
       "analysis": {
-        "description": "Two women celebrating with champagne in a dimly lit, luxurious setting.",
+        "description": "Two women celebrating in a nightclub, one holding a bottle of champagne and the other holding a glass.",
         "categories": [
           "lifestyle",
-          "girls_trip"
+          "travel",
+          "girls_trip",
+          "night"
         ],
-        "time_of_day": "evening",
-        "mood": "joyful",
-        "outfit": "The woman on the left wears a denim top and white skirt, while the woman on the right is dressed in a pink dress.",
-        "location": "A luxurious lounge or club",
+        "time_of_day": "night",
+        "mood": "celebratory",
+        "outfit": "denim top and white skirt, pink dress",
+        "location": "nightclub",
         "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 7,
+        "reel_score": 9,
+        "post_score": 8,
         "reject": false,
-        "reason": "This image captures a celebratory moment, making it suitable for a lifestyle or travel post."
+        "reason": "The image is well-lit and clear, with no explicit or private content. The women are dressed in clean and stylish outfits, and the background is a typical nightclub setting. This image would be suitable for a lifestyle or travel post."
       },
       "used": false
     },
@@ -126,7 +128,7 @@
       "id": "43ffc7c813f4",
       "hash": "43ffc7c813f4b1200e9b1dd21afd2fb292211a9a",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
-      "added_at": "2026-06-02T19:59:36.644Z",
+      "added_at": "2026-06-02T22:05:53.686Z",
       "source": "incoming",
       "meta": {
         "width": 1122,
@@ -860,7 +862,7 @@
       "id": "69af0b75b8b4",
       "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
-      "added_at": "2026-06-02T20:00:05.132Z",
+      "added_at": "2026-06-02T22:06:03.677Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -889,7 +891,7 @@
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_17_15 PM.png",
-      "added_at": "2026-06-02T20:00:08.880Z",
+      "added_at": "2026-06-02T22:06:18.696Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -898,22 +900,19 @@
         "format": "png"
       },
       "analysis": {
-        "description": "Two women are lying in bed, laughing and enjoying the sunset view from their room.",
+        "description": "ChatGPT Image May 30, 2026, 10_17_15 PM.png lifestyle travel photo",
         "categories": [
-          "evening",
-          "bedroom",
-          "lifestyle",
-          "girls_trip"
+          "morning"
         ],
-        "time_of_day": "evening",
-        "mood": "happy",
-        "outfit": "white comforter and pillows",
-        "location": "likely a beachside villa or resort",
-        "quality_score": 8,
+        "time_of_day": "morning",
+        "mood": "natural travel lifestyle",
+        "outfit": "stylish vacation outfit",
+        "location": "travel location",
+        "quality_score": 7,
         "reel_score": 6,
         "post_score": 7,
         "reject": false,
-        "reason": "This image is suitable for a lifestyle or travel post, showcasing a relaxing evening moment with a beautiful view."
+        "reason": "filename and image metadata analysis"
       },
       "used": false
     },
@@ -1199,39 +1198,6 @@
       },
       "used": false,
       "exists": true
-    },
-    {
-      "id": "a0123df96061",
-      "hash": "a0123df96061e7a79ac85b2d3a8647e2e48c4c3d",
-      "path": "media/evening/ChatGPT Image May 27, 2026, 05_48_19 PM.png",
-      "added_at": "2026-06-02T12:09:32.720Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1088,
-        "height": 1445,
-        "ratio": 0.7529411764705882,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman in a pink sari is sitting in the passenger seat of a car, looking at the camera with her hand on her head.",
-        "categories": [
-          "evening",
-          "lifestyle",
-          "travel"
-        ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "A pink sari with a matching blouse and a gold necklace and bracelet.",
-        "location": "likely a car interior",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 7,
-        "reject": false,
-        "reason": "The image is well-lit and clear, and the woman's pose and expression are interesting. The outfit is also visually appealing."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T20:03:43.550Z"
     },
     {
       "id": "419097487701",
