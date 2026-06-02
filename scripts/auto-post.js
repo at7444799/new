@@ -27,8 +27,6 @@ const PENDING_FILE = path.join(DATA_ROOT, "pending_post.json");
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".aac", ".wav"];
 
-const DEFAULT_REEL_OVERLAY = process.env.REEL_TEXT_OVERLAY || "";
-
 function log(message) {
   console.log(`[BOT] ${message}`);
 }
@@ -445,30 +443,6 @@ Rules:
   }
 }
 
-function cleanOverlayText(input) {
-  if (!input || !input.trim()) {
-    return "";
-  }
-
-  const emoji =
-    input.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u)?.[0] || "✨";
-
-  const cleanWords = input
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
-    .replace(/[^a-zA-Z]/g, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  const word = cleanWords[0] || "Vibe";
-
-  return `${word} ${emoji}`;
-}
-
-async function generateOverlayText() {
-  return cleanOverlayText(DEFAULT_REEL_OVERLAY);
-}
-
 async function testAccounts() {
   const fbPageId = getEnv("FB_PAGE_ID");
   const igUserId = getEnv("IG_USER_ID");
@@ -486,181 +460,104 @@ async function testAccounts() {
   log(`Instagram OK: ${JSON.stringify(ig)}`);
 }
 
+/*
+  CLEAN PHOTO POST IMAGE
+  No blur.
+  No background editing.
+  It simply fits the photo inside Instagram's safe 4:5 size.
+*/
 async function createInstagramSafeImage(sourcePath, outputPath) {
-  const source = sharp(sourcePath).rotate();
-
-  const backgroundBuffer = await source
-    .clone()
-    .resize(1080, 1350, {
-      fit: "cover",
-      position: "attention"
-    })
-    .blur(25)
-    .modulate({
-      brightness: 0.92,
-      saturation: 1
-    })
-    .jpeg({
-      quality: 92
-    })
-    .toBuffer();
-
-  const foregroundBuffer = await source
-    .clone()
+  await sharp(sourcePath)
+    .rotate()
     .resize(1080, 1350, {
       fit: "contain",
       background: {
         r: 0,
         g: 0,
         b: 0,
-        alpha: 0
+        alpha: 1
       }
     })
-    .png()
-    .toBuffer();
-
-  await sharp(backgroundBuffer)
-    .composite([
-      {
-        input: foregroundBuffer,
-        gravity: "center"
-      }
-    ])
     .jpeg({
-      quality: 94
+      quality: 95
     })
     .toFile(outputPath);
+
+  log(`Created clean Instagram-safe image without blur: ${outputPath}`);
 }
 
-async function createReelFrame(sourcePath, outputPath) {
-  const source = sharp(sourcePath).rotate();
-
-  const backgroundBuffer = await source
-    .clone()
-    .resize(1080, 1920, {
-      fit: "cover",
-      position: "attention"
-    })
-    .blur(30)
-    .modulate({
-      brightness: 0.86,
-      saturation: 1.05
-    })
-    .jpeg({
-      quality: 90
-    })
-    .toBuffer();
-
-  const foregroundBuffer = await source
-    .clone()
-    .resize(1010, 1600, {
-      fit: "contain",
-      background: {
-        r: 0,
-        g: 0,
-        b: 0,
-        alpha: 0
-      }
-    })
-    .png()
-    .toBuffer();
-
-  await sharp(backgroundBuffer)
-    .composite([
-      {
-        input: foregroundBuffer,
-        gravity: "center"
-      }
-    ])
-    .jpeg({
-      quality: 94
-    })
-    .toFile(outputPath);
-}
-
-function escapeDrawText(text) {
-  return text
-    .replace(/\\/g, "\\\\")
-    .replace(/:/g, "\\:")
-    .replace(/'/g, "\\'")
-    .replace(/\[/g, "\\[")
-    .replace(/\]/g, "\\]")
-    .replace(/,/g, "\\,");
-}
-
-async function createReelFromPhoto(imagePath, musicPath, outputPath, overlayText) {
-  const framePath = path.join(REELS_OUTPUT_ROOT, `frame_${Date.now()}.jpg`);
-
-  await createReelFrame(imagePath, framePath);
-
-  let filter =
-    "scale=1080:1920," +
-    "zoompan=z='min(zoom+0.0012,1.08)':d=270:s=1080x1920:fps=30," +
-    "format=yuv420p";
-
-  if (overlayText && overlayText.trim()) {
-    const safeText = escapeDrawText(overlayText);
-
-    filter +=
-      `,drawtext=text='${safeText}':` +
-      "fontcolor=white:" +
-      "fontsize=54:" +
-      "box=1:" +
-      "boxcolor=black@0.35:" +
-      "boxborderw=24:" +
-      "x=(w-text_w)/2:" +
-      "y=h-300";
-
-    log(`Text overlay enabled: ${overlayText}`);
-  } else {
-    log("Text overlay disabled.");
-  }
-
+/*
+  CLEAN IMAGE REEL
+  No blur.
+  No zoom.
+  No text overlay.
+  No background effects.
+  It only puts the photo into a 1080x1920 reel canvas and adds music.
+*/
+async function createReelFromPhoto(imagePath, musicPath, outputPath) {
   const args = [
     "-y",
+
     "-loop",
     "1",
+    "-framerate",
+    "30",
     "-i",
-    framePath,
+    imagePath,
+
     "-stream_loop",
     "-1",
     "-i",
     musicPath,
+
     "-t",
     "9",
+
     "-vf",
-    filter,
+    "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p",
+
     "-map",
     "0:v",
+
     "-map",
     "1:a",
+
     "-shortest",
+
     "-c:v",
     "libx264",
+
     "-preset",
     "veryfast",
+
     "-crf",
-    "23",
+    "22",
+
     "-pix_fmt",
     "yuv420p",
+
     "-c:a",
     "aac",
+
     "-b:a",
     "128k",
+
     "-movflags",
     "+faststart",
+
     outputPath
   ];
 
-  log("Creating Reel video with FFmpeg...");
+  log("Creating simple clean photo Reel with music only...");
+  log("Blur background disabled.");
+  log("Zoom effect disabled.");
+  log("Text overlay disabled.");
 
   await execFileAsync("ffmpeg", args, {
-    maxBuffer: 1024 * 1024 * 10
+    maxBuffer: 1024 * 1024 * 20
   });
 
-  safeDelete(framePath);
-
-  log(`Created Reel video: ${outputPath}`);
+  log(`Created clean Reel video: ${outputPath}`);
 }
 
 async function preparePhotoPost(mode) {
@@ -694,19 +591,18 @@ async function prepareReelPost() {
   const music = pickMusicRotation();
 
   const caption = await generateCaption("reel", reelImage);
-  const overlayText = await generateOverlayText();
 
   const stamp = Date.now();
   const reelVideo = path.join(REELS_OUTPUT_ROOT, `reel_${stamp}.mp4`);
 
-  await createReelFromPhoto(reelImage, music, reelVideo, overlayText);
+  await createReelFromPhoto(reelImage, music, reelVideo);
 
   const pending = {
     type: "reel",
     mode: "reel",
     created_at: new Date().toISOString(),
     caption,
-    overlay_text: overlayText,
+    overlay_text: "",
     original_image: relativePosix(reelImage),
     music_used: relativePosix(music),
     reel_video: relativePosix(reelVideo)
@@ -714,7 +610,7 @@ async function prepareReelPost() {
 
   savePending(pending);
 
-  log("Pending Reel post saved.");
+  log("Pending clean Reel post saved.");
 }
 
 async function waitForInstagramMedia(containerId) {
@@ -929,7 +825,7 @@ async function publishPendingPost() {
       mode: pending.mode,
       posted_at: postedAt,
       caption,
-      overlay_text: pending.overlay_text,
+      overlay_text: pending.overlay_text || "",
       original_image: pending.original_image,
       music_used: pending.music_used,
       reel_video: pending.reel_video,
