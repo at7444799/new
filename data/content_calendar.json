@@ -1,0 +1,41 @@
+{
+  "slots": {
+    "morning_photo": {
+      "label": "morning",
+      "categories": ["morning", "breakfast", "coffee", "pool", "villa", "beach", "sunrise", "bedroom", "balcony"],
+      "captionMood": "soft morning travel diary"
+    },
+    "afternoon_photo": {
+      "label": "afternoon",
+      "categories": ["market", "cafe", "shopping", "street", "travel", "temple", "rice_fields", "beach", "food"],
+      "captionMood": "real daytime exploring"
+    },
+    "evening_photo": {
+      "label": "evening",
+      "categories": ["sunset", "dinner", "villa", "beach", "pool", "city", "night"],
+      "captionMood": "golden evening, calm, cinematic"
+    },
+    "night_photo": {
+      "label": "night",
+      "categories": ["night", "bedroom", "hotel", "party", "dinner", "city", "cozy"],
+      "captionMood": "cozy night diary"
+    },
+    "reel": {
+      "label": "reel",
+      "categories": ["travel", "girls_trip", "photo_dump", "pool", "market", "beach", "villa", "food", "sunset"],
+      "captionMood": "viral travel reel, girls trip recap"
+    },
+    "story": {
+      "label": "story",
+      "categories": ["morning", "food", "coffee", "pool", "market", "sunset", "night", "behind_the_scenes"],
+      "captionMood": "short story text"
+    }
+  },
+  "realLifeCycle": [
+    { "start": "06:00", "end": "09:30", "mode": "morning_photo" },
+    { "start": "09:31", "end": "15:59", "mode": "afternoon_photo" },
+    { "start": "16:00", "end": "20:30", "mode": "evening_photo" },
+    { "start": "20:31", "end": "23:59", "mode": "night_photo" },
+    { "start": "00:00", "end": "05:59", "mode": "reel" }
+  ]
+}
