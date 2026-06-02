@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T19:01:59.778Z",
+  "updated_at": "2026-06-02T20:00:08.915Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -35,7 +35,7 @@
       "id": "ea1df4ab784c",
       "hash": "ea1df4ab784c59c68c6ed11409a07b8fbb577c79",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
-      "added_at": "2026-06-02T18:58:45.487Z",
+      "added_at": "2026-06-02T19:59:21.140Z",
       "source": "incoming",
       "meta": {
         "width": 1086,
@@ -44,19 +44,20 @@
         "format": "png"
       },
       "analysis": {
-        "description": "ChatGPT Image May 27, 2026, 05_47_44 PM.png lifestyle travel photo",
+        "description": "Two women celebrating with champagne in a dimly lit, luxurious setting.",
         "categories": [
-          "lifestyle"
+          "lifestyle",
+          "girls_trip"
         ],
-        "time_of_day": "day",
-        "mood": "natural travel lifestyle",
-        "outfit": "stylish vacation outfit",
-        "location": "travel location",
-        "quality_score": 7,
-        "reel_score": 8,
+        "time_of_day": "evening",
+        "mood": "joyful",
+        "outfit": "The woman on the left wears a denim top and white skirt, while the woman on the right is dressed in a pink dress.",
+        "location": "A luxurious lounge or club",
+        "quality_score": 8,
+        "reel_score": 6,
         "post_score": 7,
         "reject": false,
-        "reason": "filename and image metadata analysis"
+        "reason": "This image captures a celebratory moment, making it suitable for a lifestyle or travel post."
       },
       "used": false
     },
@@ -125,7 +126,7 @@
       "id": "43ffc7c813f4",
       "hash": "43ffc7c813f4b1200e9b1dd21afd2fb292211a9a",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
-      "added_at": "2026-06-02T18:58:54.311Z",
+      "added_at": "2026-06-02T19:59:36.644Z",
       "source": "incoming",
       "meta": {
         "width": 1122,
@@ -703,82 +704,6 @@
       "exists": true
     },
     {
-      "id": "41d66d719532",
-      "hash": "41d66d71953262c25d36ab9edc6148cc43368645",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 09_48_22 PM.png",
-      "added_at": "2026-06-02T12:06:11.953Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1122,
-        "height": 1402,
-        "ratio": 0.8002853067047075,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman in a bikini taking a selfie in an infinity pool at sunrise or sunset, with a tropical drink in hand and a stunning ocean view behind her.",
-        "categories": [
-          "morning",
-          "afternoon",
-          "evening",
-          "morning",
-          "morning",
-          "travel",
-          "girls_trip",
-          "lifestyle"
-        ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "brown bikini",
-        "location": "Bali",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 8,
-        "reject": false,
-        "reason": "This image is visually appealing and captures a serene moment of relaxation, making it suitable for a lifestyle/travel influencer's post."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T19:01:59.778Z"
-    },
-    {
-      "id": "c90947c28a1b",
-      "hash": "c90947c28a1b94aa12407a2268ad369712d9ff6b",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 09_48_26 PM.png",
-      "added_at": "2026-06-02T12:06:18.060Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1122,
-        "height": 1402,
-        "ratio": 0.8002853067047075,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman in a black bikini stands in an infinity pool, holding a cocktail and gazing at the sunset over the ocean.",
-        "categories": [
-          "morning",
-          "afternoon",
-          "evening",
-          "morning",
-          "morning",
-          "travel",
-          "girls_trip",
-          "evening"
-        ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "black bikini",
-        "location": "Bali",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 8,
-        "reject": false,
-        "reason": "This image captures a serene and idyllic moment, perfect for a lifestyle/travel influencer's evening post."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T19:01:59.778Z"
-    },
-    {
       "id": "eab24e74e3e2",
       "hash": "eab24e74e3e225cc29a7a354e19bdec732b365b7",
       "path": "media/morning/ChatGPT Image May 30, 2026, 09_49_05 PM.png",
@@ -932,44 +857,10 @@
       "exists": true
     },
     {
-      "id": "0a12fc93318d",
-      "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_42 PM.png",
-      "added_at": "2026-06-02T18:59:06.936Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1402,
-        "height": 1122,
-        "ratio": 1.249554367201426,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "Two women laughing and chatting in a bedroom with a large circular bed, overlooking the ocean at sunset.",
-        "categories": [
-          "lifestyle",
-          "travel",
-          "girls_trip",
-          "bedroom",
-          "evening"
-        ],
-        "time_of_day": "evening",
-        "mood": "happy",
-        "outfit": "white blankets",
-        "location": "beachside villa",
-        "quality_score": 8,
-        "reel_score": 9,
-        "post_score": 8,
-        "reject": false,
-        "reason": "The image is well-lit, and the women are not showing any private body parts. The scene appears to be a peaceful and relaxing moment, which is suitable for a lifestyle/travel post."
-      },
-      "used": true,
-      "used_at": "2026-06-02T19:01:59.778Z"
-    },
-    {
       "id": "69af0b75b8b4",
       "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
-      "added_at": "2026-06-02T18:59:13.173Z",
+      "added_at": "2026-06-02T20:00:05.132Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -998,7 +889,7 @@
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_17_15 PM.png",
-      "added_at": "2026-06-02T18:59:19.358Z",
+      "added_at": "2026-06-02T20:00:08.880Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -1007,19 +898,22 @@
         "format": "png"
       },
       "analysis": {
-        "description": "Two women lying on a circular bed in a dimly lit bedroom, laughing and chatting, with a stunning ocean view through floor-to-ceiling windows.",
+        "description": "Two women are lying in bed, laughing and enjoying the sunset view from their room.",
         "categories": [
-          "morning_afternoon_evening_night_pool_villa_market_cafe_food_beach_temple_travel_girls_trip_bedroom_sunset_rice_fields_lifestyle"
+          "evening",
+          "bedroom",
+          "lifestyle",
+          "girls_trip"
         ],
         "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "white sheets",
-        "location": "bedroom with ocean view",
+        "mood": "happy",
+        "outfit": "white comforter and pillows",
+        "location": "likely a beachside villa or resort",
         "quality_score": 8,
-        "reel_score": 9,
-        "post_score": 8,
+        "reel_score": 6,
+        "post_score": 7,
         "reject": false,
-        "reason": "The image is well-lit, and the atmosphere is intimate and relaxing, making it suitable for a lifestyle post."
+        "reason": "This image is suitable for a lifestyle or travel post, showcasing a relaxing evening moment with a beautiful view."
       },
       "used": false
     },
@@ -1247,39 +1141,6 @@
       "exists": true
     },
     {
-      "id": "b203a2e71038",
-      "hash": "b203a2e7103883f66724bea58894534ca3e2075c",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 10_41_42 PM.png",
-      "added_at": "2026-06-02T12:08:55.960Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1448,
-        "height": 1086,
-        "ratio": 1.3333333333333333,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "Two women taking a selfie in front of a mirror, both wearing white tank tops and cartoon character shorts.",
-        "categories": [
-          "lifestyle",
-          "travel",
-          "girls_trip"
-        ],
-        "time_of_day": "morning",
-        "mood": "playful",
-        "outfit": "white tank tops and cartoon character shorts",
-        "location": "bedroom",
-        "quality_score": 8,
-        "reel_score": 7,
-        "post_score": 9,
-        "reject": false,
-        "reason": "The image is well-lit and clear, with a fun and playful atmosphere. The matching outfits add a touch of creativity and style."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T19:01:59.778Z"
-    },
-    {
       "id": "0afd9939f72b",
       "hash": "0afd9939f72baed4d1a888699f54d11607873735",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_41_45 PM.png",
@@ -1308,40 +1169,6 @@
       },
       "used": false,
       "exists": true
-    },
-    {
-      "id": "6c713f131339",
-      "hash": "6c713f1313395f878222f932ecb078abdb3039d7",
-      "path": "media/evening/ChatGPT Image May 27, 2026, 05_48_09 PM.png",
-      "added_at": "2026-06-02T12:09:13.603Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1086,
-        "height": 1448,
-        "ratio": 0.75,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman in a pink sari reclines on the hood of a car, surrounded by rolling hills and trees, exuding relaxation and serenity.",
-        "categories": [
-          "evening",
-          "lifestyle",
-          "travel",
-          "girls_trip"
-        ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "pink sari with floral embroidery, gold jewelry",
-        "location": "countryside",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 7,
-        "reject": false,
-        "reason": "The image captures a serene and peaceful moment, making it suitable for a lifestyle or travel post."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T19:01:59.778Z"
     },
     {
       "id": "d8dc29142e43",
