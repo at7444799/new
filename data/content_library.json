@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T22:30:36.495Z",
+  "updated_at": "2026-06-02T23:19:08.568Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -121,7 +121,8 @@
         "reject": false,
         "reason": "The image is well-lit, and the women are posing in a fun and playful way. The background is also visually appealing, with the marble wall and gold accents adding a touch of luxury."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "830663422818",
@@ -766,7 +767,7 @@
       "id": "69af0b75b8b4",
       "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
-      "added_at": "2026-06-02T22:29:03.698Z",
+      "added_at": "2026-06-02T23:17:17.235Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -775,21 +776,19 @@
         "format": "png"
       },
       "analysis": {
-        "description": "A woman is sitting on a bed, stretching her arms up in the air, with sunlight streaming through the window behind her.",
+        "description": "ChatGPT Image May 30, 2026, 10_15_53 PM.png lifestyle travel photo",
         "categories": [
-          "morning",
-          "bedroom",
-          "lifestyle"
+          "morning"
         ],
         "time_of_day": "morning",
-        "mood": "relaxed",
-        "outfit": "white comforter",
-        "location": "bedroom",
-        "quality_score": 8,
+        "mood": "natural travel lifestyle",
+        "outfit": "stylish vacation outfit",
+        "location": "travel location",
+        "quality_score": 7,
         "reel_score": 6,
         "post_score": 7,
         "reject": false,
-        "reason": "This image is suitable for a lifestyle post, showcasing a peaceful morning moment in a cozy bedroom setting."
+        "reason": "filename and image metadata analysis"
       },
       "used": false
     },
@@ -797,7 +796,7 @@
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_17_15 PM.png",
-      "added_at": "2026-06-02T22:29:14.191Z",
+      "added_at": "2026-06-02T23:19:08.548Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -1040,37 +1039,6 @@
       },
       "used": false,
       "exists": true
-    },
-    {
-      "id": "d8dc29142e43",
-      "hash": "d8dc29142e432bcab715cb036d84c912367b70fa",
-      "path": "media/evening/ChatGPT Image May 27, 2026, 05_48_15 PM.png",
-      "added_at": "2026-06-02T12:09:27.624Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1086,
-        "height": 1448,
-        "ratio": 0.75,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "ChatGPT Image May 27, 2026, 05_48_15 PM.png lifestyle travel photo",
-        "categories": [
-          "evening"
-        ],
-        "time_of_day": "evening",
-        "mood": "natural travel lifestyle",
-        "outfit": "stylish vacation outfit",
-        "location": "travel location",
-        "quality_score": 7,
-        "reel_score": 8,
-        "post_score": 7,
-        "reject": false,
-        "reason": "filename and image metadata analysis"
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T22:30:36.495Z"
     },
     {
       "id": "419097487701",
