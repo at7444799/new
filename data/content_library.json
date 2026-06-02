@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T18:59:19.401Z",
+  "updated_at": "2026-06-02T19:01:59.778Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -736,8 +736,9 @@
         "reject": false,
         "reason": "This image is visually appealing and captures a serene moment of relaxation, making it suitable for a lifestyle/travel influencer's post."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T19:01:59.778Z"
     },
     {
       "id": "c90947c28a1b",
@@ -773,8 +774,9 @@
         "reject": false,
         "reason": "This image captures a serene and idyllic moment, perfect for a lifestyle/travel influencer's evening post."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T19:01:59.778Z"
     },
     {
       "id": "eab24e74e3e2",
@@ -960,7 +962,8 @@
         "reject": false,
         "reason": "The image is well-lit, and the women are not showing any private body parts. The scene appears to be a peaceful and relaxing moment, which is suitable for a lifestyle/travel post."
       },
-      "used": false
+      "used": true,
+      "used_at": "2026-06-02T19:01:59.778Z"
     },
     {
       "id": "69af0b75b8b4",
@@ -1272,8 +1275,9 @@
         "reject": false,
         "reason": "The image is well-lit and clear, with a fun and playful atmosphere. The matching outfits add a touch of creativity and style."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T19:01:59.778Z"
     },
     {
       "id": "0afd9939f72b",
@@ -1335,8 +1339,9 @@
         "reject": false,
         "reason": "The image captures a serene and peaceful moment, making it suitable for a lifestyle or travel post."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T19:01:59.778Z"
     },
     {
       "id": "d8dc29142e43",
