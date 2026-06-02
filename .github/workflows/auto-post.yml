@@ -15,25 +15,25 @@ on:
           - reel
 
   schedule:
-    # GitHub Actions cron runs in UTC.
-    # These are converted from Indian Standard Time.
+    # GitHub Actions cron always runs in UTC.
+    # India time = UTC + 5:30
 
-    # Morning photo: 7:00 AM India time
+    # 7:00 AM IST - Morning photo
     - cron: "30 1 * * *"
 
-    # Reel 1: 10:30 AM India time
+    # 10:30 AM IST - Reel 1
     - cron: "0 5 * * *"
 
-    # Reel 2: 1:30 PM India time
+    # 1:30 PM IST - Reel 2
     - cron: "0 8 * * *"
 
-    # Reel 3: 5:00 PM India time
+    # 5:00 PM IST - Reel 3
     - cron: "30 11 * * *"
 
-    # Evening photo: 7:30 PM India time
+    # 7:30 PM IST - Evening photo
     - cron: "0 14 * * *"
 
-    # Reel 4: 10:00 PM India time
+    # 10:00 PM IST - Reel 4
     - cron: "30 16 * * *"
 
 permissions:
@@ -58,8 +58,6 @@ jobs:
       NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
       NVIDIA_VISION_MODEL: ${{ secrets.NVIDIA_VISION_MODEL }}
 
-      MANUAL_MODE: ${{ github.event.inputs.mode || 'auto' }}
-
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
 
@@ -70,15 +68,75 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
+      - name: Decide post mode
+        shell: bash
+        run: |
+          echo "GitHub event: ${{ github.event_name }}"
+          echo "Triggered schedule: ${{ github.event.schedule }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ github.event.inputs.mode }}"
+          else
+            case "${{ github.event.schedule }}" in
+              "30 1 * * *")
+                MODE="morning_photo"
+                ;;
+              "0 5 * * *")
+                MODE="reel"
+                ;;
+              "0 8 * * *")
+                MODE="reel"
+                ;;
+              "30 11 * * *")
+                MODE="reel"
+                ;;
+              "0 14 * * *")
+                MODE="evening_photo"
+                ;;
+              "30 16 * * *")
+                MODE="reel"
+                ;;
+              *)
+                MODE="auto"
+                ;;
+            esac
+          fi
+
+          echo "MANUAL_MODE=$MODE" >> "$GITHUB_ENV"
+          echo "Selected post mode: $MODE"
+
       - name: Show trigger and time
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "Manual mode: $MANUAL_MODE"
+          echo "Selected mode: $MANUAL_MODE"
           echo "Branch: $GITHUB_REF_NAME"
+
           echo "UTC time:"
           date -u
+
           echo "India time:"
-          date
+          TZ=Asia/Kolkata date
+
+      - name: Safety check India time
+        shell: bash
+        run: |
+          HOUR=$(TZ=Asia/Kolkata date +%H)
+          MIN=$(TZ=Asia/Kolkata date +%M)
+
+          echo "Current India time: $HOUR:$MIN"
+          echo "Mode: $MANUAL_MODE"
+
+          # This does NOT block the workflow.
+          # It only prints warning if GitHub delayed the run.
+          if [ "$MANUAL_MODE" = "morning_photo" ]; then
+            echo "Expected slot: Morning photo around 7:00 AM IST"
+          elif [ "$MANUAL_MODE" = "evening_photo" ]; then
+            echo "Expected slot: Evening photo around 7:30 PM IST"
+          elif [ "$MANUAL_MODE" = "reel" ]; then
+            echo "Expected slot: Reel schedule"
+          else
+            echo "Expected slot: Auto/manual"
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -110,6 +168,12 @@ jobs:
           echo "Reels files:"
           ls -la media/reels || true
 
+          echo "Morning files:"
+          ls -la media/morning || true
+
+          echo "Evening files:"
+          ls -la media/evening || true
+
           echo "Music files:"
           ls -la media/music || true
 
@@ -122,7 +186,6 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-
           git add -A media data
 
           if git diff --cached --quiet; then
@@ -145,7 +208,6 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-
           git add -A media data
 
           if git diff --cached --quiet; then
