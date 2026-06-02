@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T12:11:42.185Z",
+  "updated_at": "2026-06-02T17:55:45.712Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -28,13 +28,14 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "ea1df4ab784c",
       "hash": "ea1df4ab784c59c68c6ed11409a07b8fbb577c79",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
-      "added_at": "2026-06-02T12:03:39.173Z",
+      "added_at": "2026-06-02T17:55:18.402Z",
       "source": "incoming",
       "meta": {
         "width": 1086,
@@ -43,21 +44,19 @@
         "format": "png"
       },
       "analysis": {
-        "description": "Two women celebrating with champagne in a dimly lit bar.",
+        "description": "ChatGPT Image May 27, 2026, 05_47_44 PM.png lifestyle travel photo",
         "categories": [
-          "lifestyle",
-          "girls_trip",
-          "evening"
+          "lifestyle"
         ],
-        "time_of_day": "evening",
-        "mood": "joyful",
-        "outfit": "The woman on the left is wearing a denim top and a beige skirt, while the woman on the right is wearing a pink dress.",
-        "location": "a bar",
-        "quality_score": 8,
-        "reel_score": 7,
-        "post_score": 8,
+        "time_of_day": "day",
+        "mood": "natural travel lifestyle",
+        "outfit": "stylish vacation outfit",
+        "location": "travel location",
+        "quality_score": 7,
+        "reel_score": 8,
+        "post_score": 7,
         "reject": false,
-        "reason": "This image is suitable for a lifestyle/travel influencer's post, as it captures a joyful moment of celebration in a bar setting."
+        "reason": "filename and image metadata analysis"
       },
       "used": false
     },
@@ -89,7 +88,8 @@
         "reject": false,
         "reason": "The image is suitable for a lifestyle post, showcasing the women's evening attire and the lively atmosphere of the nightclub."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "99dd3801ad75",
@@ -118,13 +118,14 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "43ffc7c813f4",
       "hash": "43ffc7c813f4b1200e9b1dd21afd2fb292211a9a",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
-      "added_at": "2026-06-02T12:04:10.532Z",
+      "added_at": "2026-06-02T17:55:26.733Z",
       "source": "incoming",
       "meta": {
         "width": 1122,
@@ -180,7 +181,8 @@
         "reject": false,
         "reason": "This image captures a fun and celebratory moment, making it suitable for a lifestyle or travel post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "43ffc7c813f4",
@@ -211,7 +213,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing the women's fun and stylish night out."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "830663422818",
@@ -240,7 +243,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "19ab9efa0d9a",
@@ -269,7 +273,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "47edcb25c77a",
@@ -300,7 +305,8 @@
         "reject": false,
         "reason": "The image is well-lit, and the woman's expression is relaxed and inviting. The white silk shirt adds a touch of elegance to the scene."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "54c50588ff61",
@@ -345,7 +351,8 @@
         "reject": false,
         "reason": "The image is well-composed, visually appealing, and effectively conveys the theme of a woman's daily routine."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "0315dc04fedb",
@@ -376,7 +383,8 @@
         "reject": false,
         "reason": "The image is a good representation of a lifestyle post, with a clear and clean visual, and a relatable mood. The outfit is also well-described and fits the clean lifestyle theme."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "3818aac5fadc",
@@ -407,7 +415,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing a relaxing evening moment in a bedroom setting. The woman's neutral expression and the soft lighting create a calming atmosphere, making it an appealing visual for a clean lifestyle influencer's audience."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "3a239cb49f71",
@@ -438,7 +447,8 @@
         "reject": false,
         "reason": "The image is well-lit and shows a clean and cozy bedroom setting, making it suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "e20d69dc05e3",
@@ -469,7 +479,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing a cozy evening moment in a bedroom setting."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "3d5f1165d8e4",
@@ -500,7 +511,8 @@
         "reject": false,
         "reason": "The image is a peaceful and intimate moment between two women, showcasing their relaxed and comfortable lifestyle. The white tank tops and bedroom setting add to the clean and minimalist aesthetic, making it suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "e6d3981f6c38",
@@ -531,7 +543,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing a cozy and intimate moment in a bedroom setting. The woman's relaxed expression and the teddy bear add a touch of warmth and personality to the scene."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "4ecab4e7cb8b",
@@ -560,7 +573,8 @@
         "reject": false,
         "reason": "The image is a clean and casual selfie of four women in matching outfits, taken in a bedroom mirror. It captures a relaxed and intimate moment, making it suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "dd89cccbbdd6",
@@ -591,7 +605,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing a cozy morning moment in bed."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "339007e7eced",
@@ -622,7 +637,8 @@
         "reject": false,
         "reason": "The image is a good representation of a morning routine, and the woman's relaxed expression and comfortable pose make it suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "7ef8bd8b781f",
@@ -653,7 +669,8 @@
         "reject": false,
         "reason": "The image is a good representation of a morning routine, and the woman's relaxed expression and neutral background make it suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "616387b40cb3",
@@ -682,7 +699,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "41d66d719532",
@@ -718,7 +736,8 @@
         "reject": false,
         "reason": "This image is visually appealing and captures a serene moment of relaxation, making it suitable for a lifestyle/travel influencer's post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "c90947c28a1b",
@@ -754,7 +773,8 @@
         "reject": false,
         "reason": "This image captures a serene and idyllic moment, perfect for a lifestyle/travel influencer's evening post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "eab24e74e3e2",
@@ -786,7 +806,8 @@
         "reject": false,
         "reason": "The image is visually appealing and captures a relaxing moment, making it suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "8e98dc4d263a",
@@ -815,7 +836,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "104564226693",
@@ -844,7 +866,8 @@
         "reject": false,
         "reason": "The image is visually appealing and peaceful, and it would likely be well-received by viewers who are looking for inspiration for their own travels or simply want to escape into a relaxing atmosphere."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "c4f566fa93a9",
@@ -873,7 +896,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "4d866eda879f",
@@ -918,7 +942,8 @@
         "reject": false,
         "reason": "The image is visually appealing and suggests a relaxing vacation."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "97d2bd44aecb",
@@ -947,13 +972,14 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_42 PM.png",
-      "added_at": "2026-06-02T12:07:49.806Z",
+      "added_at": "2026-06-02T17:55:31.927Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -962,7 +988,36 @@
         "format": "png"
       },
       "analysis": {
-        "description": "ChatGPT Image May 30, 2026, 10_15_42 PM.png lifestyle travel photo",
+        "description": "Two women in a bedroom with a large circular bed and floor-to-ceiling windows offering a stunning ocean view at sunset.",
+        "categories": [
+          "lifestyle_travel_girls_trip_bedroom_sunset"
+        ],
+        "time_of_day": "evening",
+        "mood": "relaxed",
+        "outfit": "white sheets",
+        "location": "beachside villa",
+        "quality_score": 8,
+        "reel_score": 7,
+        "post_score": 9,
+        "reject": false,
+        "reason": "The image is well-lit, and the composition is visually appealing. The sunset view and relaxed atmosphere make it suitable for a lifestyle or travel post."
+      },
+      "used": false
+    },
+    {
+      "id": "69af0b75b8b4",
+      "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
+      "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
+      "added_at": "2026-06-02T17:55:39.968Z",
+      "source": "legacy",
+      "meta": {
+        "width": 1402,
+        "height": 1122,
+        "ratio": 1.249554367201426,
+        "format": "png"
+      },
+      "analysis": {
+        "description": "ChatGPT Image May 30, 2026, 10_15_53 PM.png lifestyle travel photo",
         "categories": [
           "morning"
         ],
@@ -979,41 +1034,10 @@
       "used": false
     },
     {
-      "id": "69af0b75b8b4",
-      "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
-      "added_at": "2026-06-02T12:07:54.470Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1402,
-        "height": 1122,
-        "ratio": 1.249554367201426,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman is sitting on a bed, stretching her arms up in the air, with sunlight streaming through the window behind her.",
-        "categories": [
-          "morning",
-          "bedroom",
-          "lifestyle"
-        ],
-        "time_of_day": "morning",
-        "mood": "relaxed",
-        "outfit": "white comforter and a white tank top",
-        "location": "bedroom",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 7,
-        "reject": false,
-        "reason": "This image is suitable for a lifestyle post, showcasing a relaxing morning moment in a cozy bedroom setting."
-      },
-      "used": false
-    },
-    {
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_17_15 PM.png",
-      "added_at": "2026-06-02T12:08:03.394Z",
+      "added_at": "2026-06-02T17:55:45.676Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -1022,23 +1046,19 @@
         "format": "png"
       },
       "analysis": {
-        "description": "Two women laughing and chatting in a bedroom with a large circular bed and an ocean view through floor-to-ceiling windows.",
+        "description": "ChatGPT Image May 30, 2026, 10_17_15 PM.png lifestyle travel photo",
         "categories": [
-          "lifestyle",
-          "travel",
-          "girls_trip",
-          "bedroom",
-          "evening"
+          "morning"
         ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "white sheets",
-        "location": "beachside villa",
-        "quality_score": 8,
+        "time_of_day": "morning",
+        "mood": "natural travel lifestyle",
+        "outfit": "stylish vacation outfit",
+        "location": "travel location",
+        "quality_score": 7,
         "reel_score": 6,
         "post_score": 7,
         "reject": false,
-        "reason": "The image is well-lit, and the atmosphere is relaxed and intimate. The ocean view through the floor-to-ceiling windows adds a touch of luxury and sophistication."
+        "reason": "filename and image metadata analysis"
       },
       "used": false
     },
@@ -1071,7 +1091,8 @@
         "reject": false,
         "reason": "The image is a good representation of a morning routine, with a peaceful atmosphere and a clean outfit. It could be used as a post or reel to showcase a relaxing morning moment."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "69af0b75b8b4",
@@ -1102,7 +1123,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing a peaceful morning moment in a cozy bedroom setting."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "ef7e114f53f9",
@@ -1133,7 +1155,8 @@
         "reject": false,
         "reason": "This image is suitable for a lifestyle post, showcasing a relaxed morning moment in bed."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "b172e83127a1",
@@ -1163,7 +1186,8 @@
         "reject": false,
         "reason": "The image is clear and well-lit, and the woman's outfit is clean and casual. The bedroom setting is also suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "3ddaaaf00426",
@@ -1196,7 +1220,8 @@
         "reject": false,
         "reason": "The image is visually appealing, with a beautiful sunset and a cozy atmosphere, making it suitable for a lifestyle or travel post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "15e40a24ff79",
@@ -1225,7 +1250,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "688b2bae3938",
@@ -1256,7 +1282,8 @@
         "reject": false,
         "reason": "The image is a good representation of a lifestyle post, with a clear and relatable scene. The woman's relaxed pose and the cartoon character on her shorts add a playful touch. The bedroom setting is also suitable for a lifestyle post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "b203a2e71038",
@@ -1287,7 +1314,8 @@
         "reject": false,
         "reason": "The image is well-lit and clear, with a fun and playful atmosphere. The matching outfits add a touch of creativity and style."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "0afd9939f72b",
@@ -1316,7 +1344,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "6c713f131339",
@@ -1348,7 +1377,8 @@
         "reject": false,
         "reason": "The image captures a serene and peaceful moment, making it suitable for a lifestyle or travel post."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "d8dc29142e43",
@@ -1377,7 +1407,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "a0123df96061",
@@ -1408,39 +1439,8 @@
         "reject": false,
         "reason": "The image is well-lit and clear, and the woman's pose and expression are interesting. The outfit is also visually appealing."
       },
-      "used": false
-    },
-    {
-      "id": "806d78edf4bd",
-      "hash": "806d78edf4bd476450797c489c2b608a9114bc00",
-      "path": "media/evening/ChatGPT Image May 27, 2026, 05_48_25 PM.png",
-      "added_at": "2026-06-02T12:09:45.388Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1089,
-        "height": 1444,
-        "ratio": 0.7541551246537396,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman in a pink sari poses in the back seat of a car, conveying a sense of glamour and sophistication.",
-        "categories": [
-          "lifestyle",
-          "travel",
-          "evening"
-        ],
-        "time_of_day": "evening",
-        "mood": "confident",
-        "outfit": "pink sari with matching bra and choker necklace",
-        "location": "car interior",
-        "quality_score": 8,
-        "reel_score": 9,
-        "post_score": 8,
-        "reject": false,
-        "reason": "The images are well-lit and in focus, and the woman's poses and expressions are engaging and confident. The use of a car as the setting adds a touch of modernity and convenience to the images."
-      },
-      "used": true,
-      "used_at": "2026-06-02T12:11:42.185Z"
+      "used": false,
+      "exists": true
     },
     {
       "id": "419097487701",
@@ -1469,7 +1469,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "d0d54a3d254e",
@@ -1500,7 +1501,8 @@
         "reject": false,
         "reason": "The image is well-lit and the woman's outfit is visually appealing. The car interior provides a unique and interesting background."
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "0a12fc93318d",
@@ -1529,7 +1531,8 @@
         "reject": false,
         "reason": "filename and image metadata analysis"
       },
-      "used": false
+      "used": false,
+      "exists": true
     },
     {
       "id": "77b992c09213",
@@ -1559,7 +1562,8 @@
         "reject": false,
         "reason": "The image is well-lit and shows the woman's outfit clearly. The city skyline in the background adds a nice touch to the scene."
       },
-      "used": false
+      "used": false,
+      "exists": true
     }
   ]
 }

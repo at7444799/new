@@ -1,1 +1,48 @@
-{}
+{
+  "type": "photo",
+  "mode": "morning_photo",
+  "created_at": "2026-06-02T17:55:53.796Z",
+  "caption": "Morning moments from our Bali adventure Morning strolls, beachy vibes, and coffee with the girls #BaliGirlsTrip #MorningMotivation #BeachLife #CoffeeLover #TravelVibes #GirlsTripVibes #ParadiseFound #TropicalVibes #WanderLust #BaliDiaries",
+  "alt_text": "A collage of photos featuring a woman in various settings in Bali, including a market, cafe, beach, and temple.",
+  "story_text": "Morning in Bali",
+  "first_comment": "Missing these mornings already",
+  "assets": [
+    "media/morning/ChatGPT Image May 30, 2026, 10_15_27 PM.png"
+  ],
+  "original_image": "media/morning/ChatGPT Image May 30, 2026, 10_15_27 PM.png",
+  "instagram_image": "media/_ig_ready/morning_photo_1780422953751.jpg",
+  "manager": {
+    "selected_score": 36,
+    "analysis": {
+      "description": "A collage of 12 photos featuring a woman in various settings, including a market, cafe, beach, and temple.",
+      "categories": [
+        "morning",
+        "afternoon",
+        "evening",
+        "night",
+        "morning",
+        "morning",
+        "market",
+        "cafe",
+        "food",
+        "beach",
+        "temple",
+        "travel",
+        "girls_trip",
+        "bedroom",
+        "evening",
+        "rice_fields",
+        "lifestyle"
+      ],
+      "time_of_day": "morning",
+      "mood": "relaxed",
+      "outfit": "white dress",
+      "location": "various locations, including a market, cafe, beach, and temple",
+      "quality_score": 8,
+      "reel_score": 7,
+      "post_score": 8,
+      "reject": false,
+      "reason": "The image is visually appealing and suggests a relaxing vacation."
+    }
+  }
+}
