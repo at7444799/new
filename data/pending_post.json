@@ -1,1 +1,34 @@
-{}
+{
+  "type": "photo",
+  "mode": "evening_photo",
+  "created_at": "2026-06-02T12:10:24.767Z",
+  "caption": "Glamour on the go in Bali. Car rides and sari nights. #BaliGirlsTrip #GlamourOnTheGo #SariNights #CarRides #TravelVibes #BaliEvenings #GirlsTripVibes #IndianWear #FashionInBali #TravelDiaries #WanderLust #BaliNights",
+  "alt_text": "A woman in a pink sari poses in the back seat of a car",
+  "story_text": "Glamour on the go",
+  "first_comment": "",
+  "assets": [
+    "media/evening/ChatGPT Image May 27, 2026, 05_48_25 PM.png"
+  ],
+  "original_image": "media/evening/ChatGPT Image May 27, 2026, 05_48_25 PM.png",
+  "instagram_image": "media/_ig_ready/evening_photo_1780402224724.jpg",
+  "manager": {
+    "selected_score": 25,
+    "analysis": {
+      "description": "A woman in a pink sari poses in the back seat of a car, conveying a sense of glamour and sophistication.",
+      "categories": [
+        "lifestyle",
+        "travel",
+        "evening"
+      ],
+      "time_of_day": "evening",
+      "mood": "confident",
+      "outfit": "pink sari with matching bra and choker necklace",
+      "location": "car interior",
+      "quality_score": 8,
+      "reel_score": 9,
+      "post_score": 8,
+      "reject": false,
+      "reason": "The images are well-lit and in focus, and the woman's poses and expressions are engaging and confident. The use of a car as the setting adds a touch of modernity and convenience to the images."
+    }
+  }
+}
