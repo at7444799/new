@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T20:00:08.915Z",
+  "updated_at": "2026-06-02T20:03:43.550Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -1229,8 +1229,9 @@
         "reject": false,
         "reason": "The image is well-lit and clear, and the woman's pose and expression are interesting. The outfit is also visually appealing."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T20:03:43.550Z"
     },
     {
       "id": "419097487701",
