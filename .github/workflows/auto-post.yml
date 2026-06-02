@@ -1,46 +1,37 @@
-name: Auto Post AI Influencer
+name: AI Influencer Content Manager
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "What to post?"
+        description: "What should the manager post?"
         required: true
         default: "auto"
         type: choice
         options:
           - auto
           - morning_photo
+          - afternoon_photo
           - evening_photo
+          - night_photo
           - reel
+          - story
 
   schedule:
-    # GitHub Actions cron always runs in UTC.
-    # India time = UTC + 5:30
-
-    # 7:00 AM IST - Morning photo
-    - cron: "30 1 * * *"
-
-    # 10:30 AM IST - Reel 1
-    - cron: "0 5 * * *"
-
-    # 1:30 PM IST - Reel 2
-    - cron: "0 8 * * *"
-
-    # 5:00 PM IST - Reel 3
-    - cron: "30 11 * * *"
-
-    # 7:30 PM IST - Evening photo
-    - cron: "0 14 * * *"
-
-    # 10:00 PM IST - Reel 4
-    - cron: "30 16 * * *"
+    # GitHub Actions cron is UTC. India time = UTC + 5:30.
+    # Real human style cycle for India time.
+    - cron: "30 1 * * *"   # 7:00 AM IST - morning post
+    - cron: "0 5 * * *"    # 10:30 AM IST - reel / travel recap
+    - cron: "0 8 * * *"    # 1:30 PM IST - afternoon post
+    - cron: "30 11 * * *"  # 5:00 PM IST - reel / golden hour
+    - cron: "0 14 * * *"   # 7:30 PM IST - evening post
+    - cron: "30 16 * * *"  # 10:00 PM IST - night reel/story
 
 permissions:
   contents: write
 
 concurrency:
-  group: auto-post-ai-influencer
+  group: ai-influencer-content-manager
   cancel-in-progress: false
 
 jobs:
@@ -58,6 +49,16 @@ jobs:
       NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
       NVIDIA_VISION_MODEL: ${{ secrets.NVIDIA_VISION_MODEL }}
 
+      # Optional. Use a JSON manifest like: {"images":["https://.../1.jpg","https://.../2.jpg"]}
+      CLOUD_IMAGE_MANIFEST_URL: ${{ secrets.CLOUD_IMAGE_MANIFEST_URL }}
+
+      # delete = remove used photos after successful posting. move = move them to media/photos/used.
+      POST_USE_ACTION: delete
+
+      # Optional future hook. Keep none until you add a real image-to-video provider adapter.
+      VIDEO_GENERATION_PROVIDER: none
+      VIDEO_GENERATION_API_KEY: ${{ secrets.VIDEO_GENERATION_API_KEY }}
+
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
 
@@ -68,7 +69,7 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Decide post mode
+      - name: Decide manager mode
         shell: bash
         run: |
           echo "GitHub event: ${{ github.event_name }}"
@@ -78,65 +79,26 @@ jobs:
             MODE="${{ github.event.inputs.mode }}"
           else
             case "${{ github.event.schedule }}" in
-              "30 1 * * *")
-                MODE="morning_photo"
-                ;;
-              "0 5 * * *")
-                MODE="reel"
-                ;;
-              "0 8 * * *")
-                MODE="reel"
-                ;;
-              "30 11 * * *")
-                MODE="reel"
-                ;;
-              "0 14 * * *")
-                MODE="evening_photo"
-                ;;
-              "30 16 * * *")
-                MODE="reel"
-                ;;
-              *)
-                MODE="auto"
-                ;;
+              "30 1 * * *") MODE="morning_photo" ;;
+              "0 5 * * *") MODE="reel" ;;
+              "0 8 * * *") MODE="afternoon_photo" ;;
+              "30 11 * * *") MODE="reel" ;;
+              "0 14 * * *") MODE="evening_photo" ;;
+              "30 16 * * *") MODE="night_photo" ;;
+              *) MODE="auto" ;;
             esac
           fi
 
           echo "MANUAL_MODE=$MODE" >> "$GITHUB_ENV"
-          echo "Selected post mode: $MODE"
+          echo "Selected mode: $MODE"
 
       - name: Show trigger and time
         run: |
           echo "Event name: ${{ github.event_name }}"
           echo "Selected mode: $MANUAL_MODE"
           echo "Branch: $GITHUB_REF_NAME"
-
-          echo "UTC time:"
-          date -u
-
-          echo "India time:"
-          TZ=Asia/Kolkata date
-
-      - name: Safety check India time
-        shell: bash
-        run: |
-          HOUR=$(TZ=Asia/Kolkata date +%H)
-          MIN=$(TZ=Asia/Kolkata date +%M)
-
-          echo "Current India time: $HOUR:$MIN"
-          echo "Mode: $MANUAL_MODE"
-
-          # This does NOT block the workflow.
-          # It only prints warning if GitHub delayed the run.
-          if [ "$MANUAL_MODE" = "morning_photo" ]; then
-            echo "Expected slot: Morning photo around 7:00 AM IST"
-          elif [ "$MANUAL_MODE" = "evening_photo" ]; then
-            echo "Expected slot: Evening photo around 7:30 PM IST"
-          elif [ "$MANUAL_MODE" = "reel" ]; then
-            echo "Expected slot: Reel schedule"
-          else
-            echo "Expected slot: Auto/manual"
-          fi
+          echo "UTC time:" && date -u
+          echo "India time:" && TZ=Asia/Kolkata date
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -151,68 +113,46 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Check and create required folders
+      - name: Create AI manager folders
         run: |
-          mkdir -p media/reels
-          mkdir -p media/morning
-          mkdir -p media/evening
-          mkdir -p media/music
-          mkdir -p media/videos
-          mkdir -p media/weekend
-          mkdir -p media/posted
-          mkdir -p data
+          mkdir -p media/photos/incoming media/photos/used media/photos/rejected media/photos/planned
+          mkdir -p media/morning media/evening media/reels media/videos media/music
+          mkdir -p media/_ig_ready media/_reels media/_cloud_cache data
+          test -f data/posted_history.json || echo '{"posted":[],"used_music":[]}' > data/posted_history.json
+          test -f data/pending_post.json || echo '{}' > data/pending_post.json
+          echo "Current media files:"
+          find media -maxdepth 4 -type f | sort || true
 
-          echo "Media folder structure:"
-          find media -maxdepth 3 -type f | sort || true
-
-          echo "Reels files:"
-          ls -la media/reels || true
-
-          echo "Morning files:"
-          ls -la media/morning || true
-
-          echo "Evening files:"
-          ls -la media/evening || true
-
-          echo "Music files:"
-          ls -la media/music || true
-
-      - name: Prepare content
+      - name: Prepare managed content
         run: npm run auto-post:prepare
 
-      - name: Commit prepared content
+      - name: Commit prepared media for public raw URLs
         run: |
-          git config user.name "ai-influencer-bot"
+          git config user.name "ai-influencer-manager"
           git config user.email "actions@github.com"
-
-          git status
           git add -A media data
-
           if git diff --cached --quiet; then
             echo "No prepared content changes to commit"
           else
-            git commit -m "Prepare influencer content"
+            git commit -m "Prepare managed influencer content"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
 
-      - name: Wait for GitHub raw files
-        run: sleep 35
+      - name: Wait for GitHub raw media availability
+        run: sleep 45
 
-      - name: Publish content
+      - name: Publish managed content
         run: npm run auto-post:publish
 
       - name: Commit cleanup and history
         if: always()
         run: |
-          git config user.name "ai-influencer-bot"
+          git config user.name "ai-influencer-manager"
           git config user.email "actions@github.com"
-
-          git status
           git add -A media data
-
           if git diff --cached --quiet; then
             echo "No cleanup/history changes to commit"
           else
-            git commit -m "Clean posted media and update history"
+            git commit -m "Update influencer content history"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
