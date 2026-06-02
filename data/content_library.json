@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T12:10:16.894Z",
+  "updated_at": "2026-06-02T12:11:42.185Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -1439,7 +1439,8 @@
         "reject": false,
         "reason": "The images are well-lit and in focus, and the woman's poses and expressions are engaging and confident. The use of a car as the setting adds a touch of modernity and convenience to the images."
       },
-      "used": false
+      "used": true,
+      "used_at": "2026-06-02T12:11:42.185Z"
     },
     {
       "id": "419097487701",
