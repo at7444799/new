@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T22:08:15.674Z",
+  "updated_at": "2026-06-02T22:29:14.218Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -30,39 +30,6 @@
       },
       "used": false,
       "exists": true
-    },
-    {
-      "id": "ea1df4ab784c",
-      "hash": "ea1df4ab784c59c68c6ed11409a07b8fbb577c79",
-      "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
-      "added_at": "2026-06-02T22:05:38.820Z",
-      "source": "incoming",
-      "meta": {
-        "width": 1086,
-        "height": 1448,
-        "ratio": 0.75,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "Two women celebrating in a nightclub, one holding a bottle of champagne and the other holding a glass.",
-        "categories": [
-          "lifestyle",
-          "travel",
-          "girls_trip",
-          "night"
-        ],
-        "time_of_day": "night",
-        "mood": "celebratory",
-        "outfit": "denim top and white skirt, pink dress",
-        "location": "nightclub",
-        "quality_score": 8,
-        "reel_score": 9,
-        "post_score": 8,
-        "reject": false,
-        "reason": "The image is well-lit and clear, with no explicit or private content. The women are dressed in clean and stylish outfits, and the background is a typical nightclub setting. This image would be suitable for a lifestyle or travel post."
-      },
-      "used": true,
-      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "6e9f6c8d43a6",
@@ -129,7 +96,7 @@
       "id": "43ffc7c813f4",
       "hash": "43ffc7c813f4b1200e9b1dd21afd2fb292211a9a",
       "path": "media/photos/incoming/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
-      "added_at": "2026-06-02T22:05:53.686Z",
+      "added_at": "2026-06-02T22:28:55.780Z",
       "source": "incoming",
       "meta": {
         "width": 1122,
@@ -138,89 +105,23 @@
         "format": "png"
       },
       "analysis": {
-        "description": "ChatGPT Image May 27, 2026, 05_47_59 PM.png lifestyle travel photo",
-        "categories": [
-          "lifestyle"
-        ],
-        "time_of_day": "day",
-        "mood": "natural travel lifestyle",
-        "outfit": "stylish vacation outfit",
-        "location": "travel location",
-        "quality_score": 7,
-        "reel_score": 8,
-        "post_score": 7,
-        "reject": false,
-        "reason": "filename and image metadata analysis"
-      },
-      "used": false
-    },
-    {
-      "id": "ea1df4ab784c",
-      "hash": "ea1df4ab784c59c68c6ed11409a07b8fbb577c79",
-      "path": "media/morning/ChatGPT Image May 27, 2026, 05_47_44 PM.png",
-      "added_at": "2026-06-02T12:04:23.368Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1086,
-        "height": 1448,
-        "ratio": 0.75,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "Two women celebrating with champagne in a dimly lit bar, surrounded by glasses and bottles, with a neon sign reading 'Dom Perignon' in the background.",
+        "description": "Four women posing for a selfie in a dimly lit room with a marble wall and gold accents, with the words 'girls night out' written above them.",
         "categories": [
           "evening",
-          "bar",
-          "celebration",
-          "champagne",
+          "lifestyle",
           "girls_trip"
         ],
         "time_of_day": "evening",
-        "mood": "joyful",
-        "outfit": "The woman on the left is wearing a denim corset top and a beige skirt, while the woman on the right is wearing a pink dress with a plunging neckline.",
-        "location": "a dimly lit bar",
-        "quality_score": 8,
-        "reel_score": 7,
-        "post_score": 8,
-        "reject": false,
-        "reason": "This image captures a fun and celebratory moment, making it suitable for a lifestyle or travel post."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T22:08:15.674Z"
-    },
-    {
-      "id": "43ffc7c813f4",
-      "hash": "43ffc7c813f4b1200e9b1dd21afd2fb292211a9a",
-      "path": "media/morning/ChatGPT Image May 27, 2026, 05_47_59 PM.png",
-      "added_at": "2026-06-02T12:04:30.748Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1122,
-        "height": 1402,
-        "ratio": 0.8002853067047075,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "Four women posing for a selfie in a dimly lit room with a marble wall and a disco ball, captioned 'girls night out'",
-        "categories": [
-          "evening",
-          "girls_trip",
-          "lifestyle"
-        ],
-        "time_of_day": "evening",
         "mood": "fun",
-        "outfit": "The women are wearing stylish outfits, including a pink jumpsuit, a brown top and black pants, a blue top and white skirt, and a gold necklace and bracelet.",
+        "outfit": "The woman on the left is wearing a light blue denim top with a white skirt, the woman in the middle is wearing a pink jumpsuit with gold jewelry, the woman on the right is wearing a brown top with black pants, and the woman behind them is wearing a black top with black pants.",
         "location": "likely a nightclub or bar",
         "quality_score": 8,
         "reel_score": 6,
-        "post_score": 7,
+        "post_score": 8,
         "reject": false,
-        "reason": "This image is suitable for a lifestyle post, showcasing the women's fun and stylish night out."
+        "reason": "The image is well-lit, and the women are posing in a fun and playful way. The background is also visually appealing, with the marble wall and gold accents adding a touch of luxury."
       },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T22:08:15.674Z"
+      "used": false
     },
     {
       "id": "830663422818",
@@ -865,7 +766,7 @@
       "id": "69af0b75b8b4",
       "hash": "69af0b75b8b4f20948aae9ec49c7a099abbc8ac7",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_15_53 PM.png",
-      "added_at": "2026-06-02T22:06:03.677Z",
+      "added_at": "2026-06-02T22:29:03.698Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -874,19 +775,21 @@
         "format": "png"
       },
       "analysis": {
-        "description": "ChatGPT Image May 30, 2026, 10_15_53 PM.png lifestyle travel photo",
+        "description": "A woman is sitting on a bed, stretching her arms up in the air, with sunlight streaming through the window behind her.",
         "categories": [
-          "morning"
+          "morning",
+          "bedroom",
+          "lifestyle"
         ],
         "time_of_day": "morning",
-        "mood": "natural travel lifestyle",
-        "outfit": "stylish vacation outfit",
-        "location": "travel location",
-        "quality_score": 7,
+        "mood": "relaxed",
+        "outfit": "white comforter",
+        "location": "bedroom",
+        "quality_score": 8,
         "reel_score": 6,
         "post_score": 7,
         "reject": false,
-        "reason": "filename and image metadata analysis"
+        "reason": "This image is suitable for a lifestyle post, showcasing a peaceful morning moment in a cozy bedroom setting."
       },
       "used": false
     },
@@ -894,7 +797,7 @@
       "id": "0a12fc93318d",
       "hash": "0a12fc93318d9b7791cd67c58cc283911f177f03",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_17_15 PM.png",
-      "added_at": "2026-06-02T22:06:18.696Z",
+      "added_at": "2026-06-02T22:29:14.191Z",
       "source": "legacy",
       "meta": {
         "width": 1402,
@@ -1047,41 +950,6 @@
       "exists": true
     },
     {
-      "id": "3ddaaaf00426",
-      "hash": "3ddaaaf00426507f3830114a79d476b70d7c7c76",
-      "path": "media/morning/ChatGPT Image May 30, 2026, 10_26_33 PM.png",
-      "added_at": "2026-06-02T12:08:34.034Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1402,
-        "height": 1122,
-        "ratio": 1.249554367201426,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "Two women in bed, laughing and enjoying each other's company, with a stunning sunset over the ocean in the background.",
-        "categories": [
-          "lifestyle",
-          "travel",
-          "girls_trip",
-          "bedroom",
-          "evening"
-        ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "not visible",
-        "location": "likely a beachside villa or resort",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 7,
-        "reject": false,
-        "reason": "The image is visually appealing, with a beautiful sunset and a cozy atmosphere, making it suitable for a lifestyle or travel post."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T22:08:15.674Z"
-    },
-    {
       "id": "15e40a24ff79",
       "hash": "15e40a24ff79647a5beca7c5e9a748e40efdc159",
       "path": "media/morning/ChatGPT Image May 30, 2026, 10_41_30 PM.png",
@@ -1232,39 +1100,6 @@
       },
       "used": false,
       "exists": true
-    },
-    {
-      "id": "d0d54a3d254e",
-      "hash": "d0d54a3d254eb7950086a85366b4d766b8d9339c",
-      "path": "media/evening/ChatGPT Image May 27, 2026, 05_48_37 PM (2).png",
-      "added_at": "2026-06-02T12:10:05.092Z",
-      "source": "legacy",
-      "meta": {
-        "width": 1088,
-        "height": 1446,
-        "ratio": 0.7524204702627939,
-        "format": "png"
-      },
-      "analysis": {
-        "description": "A woman in a pink sari, holding a rearview mirror and sitting in the back seat of a car.",
-        "categories": [
-          "lifestyle",
-          "travel",
-          "girls_trip"
-        ],
-        "time_of_day": "evening",
-        "mood": "relaxed",
-        "outfit": "pink sari with gold jewelry",
-        "location": "car interior",
-        "quality_score": 8,
-        "reel_score": 6,
-        "post_score": 7,
-        "reject": false,
-        "reason": "The image is well-lit and the woman's outfit is visually appealing. The car interior provides a unique and interesting background."
-      },
-      "used": true,
-      "exists": true,
-      "used_at": "2026-06-02T22:08:15.674Z"
     },
     {
       "id": "0a12fc93318d",
