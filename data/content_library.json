@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-02T17:55:45.712Z",
+  "updated_at": "2026-06-02T17:57:16.054Z",
   "assets": [
     {
       "id": "6355606de044",
@@ -942,8 +942,9 @@
         "reject": false,
         "reason": "The image is visually appealing and suggests a relaxing vacation."
       },
-      "used": false,
-      "exists": true
+      "used": true,
+      "exists": true,
+      "used_at": "2026-06-02T17:57:16.054Z"
     },
     {
       "id": "97d2bd44aecb",
