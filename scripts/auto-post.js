@@ -3,7 +3,6 @@ import path from "path";
 import sharp from "sharp";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { google } from "googleapis";
 
 const execFileAsync = promisify(execFile);
 
@@ -11,73 +10,58 @@ const GRAPH_VERSION = "v25.0";
 const GRAPH_URL = `https://graph.facebook.com/${GRAPH_VERSION}`;
 
 const ROOT = process.cwd();
-const MEDIA_ROOT = path.join(ROOT, "media");
-const DATA_ROOT = path.join(ROOT, "data");
+const MEDIA_DIR = path.join(ROOT, "media");
+const INCOMING_DIR = path.join(MEDIA_DIR, "incoming");
+const MUSIC_DIR = path.join(MEDIA_DIR, "music");
+const DATA_DIR = path.join(ROOT, "data");
+const GENERATED_DIR = path.join(DATA_DIR, "generated");
 
-const MORNING_DIR = path.join(MEDIA_ROOT, "morning");
-const EVENING_DIR = path.join(MEDIA_ROOT, "evening");
-const REELS_SOURCE_DIR = path.join(MEDIA_ROOT, "reels");
-const MUSIC_DIR = path.join(MEDIA_ROOT, "music");
-
-const IG_READY_ROOT = path.join(MEDIA_ROOT, "_ig_ready");
-const REELS_OUTPUT_ROOT = path.join(MEDIA_ROOT, "_reels");
-const STORIES_OUTPUT_ROOT = path.join(MEDIA_ROOT, "_stories_ready");
-const SNAPCHAT_OUTPUT_ROOT = path.join(MEDIA_ROOT, "_snapchat_ready");
-
-const HISTORY_FILE = path.join(DATA_ROOT, "posted_history.json");
-const PENDING_FILE = path.join(DATA_ROOT, "pending_post.json");
+const HISTORY_FILE = path.join(DATA_DIR, "posted_history.json");
+const PENDING_FILE = path.join(DATA_DIR, "pending_post.json");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".aac", ".wav"];
 
-const REEL_DURATION_SECONDS = Number(process.env.REEL_DURATION_SECONDS || 11);
-const REEL_FPS = 30;
+const REEL_WIDTH = 1080;
+const REEL_HEIGHT = 1920;
+const PHOTO_WIDTH = 1080;
+const PHOTO_HEIGHT = 1350;
+const FPS = 30;
 
-const ENABLE_YOUTUBE = (process.env.ENABLE_YOUTUBE || "false").toLowerCase() === "true";
-const APPROVAL_MODE = (process.env.APPROVAL_MODE || "false").toLowerCase() === "true";
-const APPROVAL_STATUS = (process.env.APPROVAL_STATUS || "").toLowerCase();
-
-function log(message) {
-  console.log(`[BOT] ${message}`);
+function log(msg) {
+  console.log(`[BOT] ${msg}`);
 }
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getEnv(name, required = true, fallback = "") {
-  const value = process.env[name] || fallback;
-  if (required && !value) {
-    throw new Error(`Missing GitHub Secret / environment variable: ${name}`);
-  }
-  return value;
-}
-
-function ensureFiles() {
-  for (const dir of [
-    DATA_ROOT,
-    MORNING_DIR,
-    EVENING_DIR,
-    REELS_SOURCE_DIR,
-    MUSIC_DIR,
-    IG_READY_ROOT,
-    REELS_OUTPUT_ROOT,
-    STORIES_OUTPUT_ROOT,
-    SNAPCHAT_OUTPUT_ROOT
-  ]) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+function ensureFolders() {
+  fs.mkdirSync(INCOMING_DIR, { recursive: true });
+  fs.mkdirSync(MUSIC_DIR, { recursive: true });
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(GENERATED_DIR, { recursive: true });
 
   if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [], used_music: [] }, null, 2), "utf8");
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [], used_music: [] }, null, 2));
   }
 
   if (!fs.existsSync(PENDING_FILE)) {
-    fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2), "utf8");
+    fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2));
   }
 }
 
-function loadJson(file, fallback) {
+function getEnv(name, required = true, fallback = "") {
+  const value = process.env[name] || fallback;
+
+  if (required && !value) {
+    throw new Error(`Missing environment variable / secret: ${name}`);
+  }
+
+  return value;
+}
+
+function readJson(file, fallback) {
   try {
     return JSON.parse(fs.readFileSync(file, "utf8"));
   } catch {
@@ -85,65 +69,39 @@ function loadJson(file, fallback) {
   }
 }
 
-function saveJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+function writeJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 function loadHistory() {
-  ensureFiles();
-  return loadJson(HISTORY_FILE, { posted: [], used_music: [] });
+  return readJson(HISTORY_FILE, { posted: [], used_music: [] });
 }
 
 function saveHistory(history) {
-  saveJson(HISTORY_FILE, history);
+  writeJson(HISTORY_FILE, history);
 }
 
 function loadPending() {
-  ensureFiles();
-  return loadJson(PENDING_FILE, {});
+  return readJson(PENDING_FILE, {});
 }
 
 function savePending(data) {
-  saveJson(PENDING_FILE, data);
+  writeJson(PENDING_FILE, data);
 }
 
 function clearPending() {
-  saveJson(PENDING_FILE, {});
+  writeJson(PENDING_FILE, {});
 }
 
-function indiaNow() {
-  return new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+function relativePosix(file) {
+  return path.relative(ROOT, file).split(path.sep).join("/");
 }
 
-function detectMode() {
-  const manualMode = (process.env.MANUAL_MODE || "").toLowerCase().trim();
-
-  if (["morning_photo", "evening_photo", "reel", "story"].includes(manualMode)) {
-    return manualMode;
-  }
-
-  const now = indiaNow();
-  const hour = now.getUTCHours();
-  const minute = now.getUTCMinutes();
-  const totalMinutes = hour * 60 + minute;
-
-  if (totalMinutes >= 390 && totalMinutes <= 480) return "morning_photo";
-  if (totalMinutes >= 1140 && totalMinutes <= 1230) return "evening_photo";
-
-  return "reel";
-}
-
-function relativePosix(localPath) {
-  return path.relative(ROOT, localPath).split(path.sep).join("/");
-}
-
-function rawGithubUrl(localPath) {
+function rawGithubUrl(file) {
   const repo = getEnv("GITHUB_REPOSITORY");
   const branch = getEnv("GITHUB_REF_NAME", false, "main");
-
-  const relative = relativePosix(localPath);
+  const relative = relativePosix(file);
   const encoded = relative.split("/").map(encodeURIComponent).join("/");
-
   return `https://raw.githubusercontent.com/${repo}/${branch}/${encoded}`;
 }
 
@@ -159,49 +117,75 @@ function findFiles(folder, extensions) {
     .sort();
 }
 
-function findImageFilesRecursive(folder) {
-  if (!fs.existsSync(folder)) return [];
-
-  const output = [];
-
-  for (const item of fs.readdirSync(folder, { withFileTypes: true })) {
-    const fullPath = path.join(folder, item.name);
-
-    if (item.isDirectory()) {
-      output.push(...findImageFilesRecursive(fullPath));
-    } else if (
-      item.isFile() &&
-      IMAGE_EXTENSIONS.includes(path.extname(item.name).toLowerCase()) &&
-      !item.name.startsWith(".")
-    ) {
-      output.push(fullPath);
-    }
-  }
-
-  return output.sort();
+function pickRandom(items) {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
-async function getImageQualityScore(imagePath) {
-  const meta = await sharp(imagePath).metadata();
+function indiaTime() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(new Date());
 
-  const width = meta.width || 0;
-  const height = meta.height || 0;
-  const pixels = width * height;
+  const hour = Number(parts.find((p) => p.type === "hour")?.value || 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value || 0);
+
+  return {
+    hour,
+    minute,
+    total: hour * 60 + minute
+  };
+}
+
+function detectMode() {
+  const manualMode = (process.env.MANUAL_MODE || "").toLowerCase().trim();
+
+  if (manualMode === "photo" || manualMode === "reel") {
+    return manualMode;
+  }
+
+  const { total } = indiaTime();
+
+  const photoTimes = [7 * 60, 19 * 60 + 30];
+
+  for (const t of photoTimes) {
+    if (Math.abs(total - t) <= 90) return "photo";
+  }
+
+  return "reel";
+}
+
+function shouldAllowPost(mode) {
+  const force = (process.env.FORCE_POST || "false").toLowerCase() === "true";
+
+  if (force) {
+    log("FORCE_POST=true, time guard skipped.");
+    return true;
+  }
+
+  const { hour, minute, total } = indiaTime();
+
+  log(`India time: ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
+  log(`Mode: ${mode}`);
+
+  const photoTimes = [7 * 60, 19 * 60 + 30];
+  const reelTimes = [10 * 60 + 30, 13 * 60 + 30, 17 * 60];
+
+  const targetTimes = mode === "photo" ? photoTimes : reelTimes;
+
+  return targetTimes.some((t) => Math.abs(total - t) <= 90);
+}
+
+async function imageQuality(file) {
+  const meta = await sharp(file).metadata();
 
   let score = 100;
-  const reasons = [];
 
-  if (width < 720 || height < 720) {
-    score -= 35;
-    reasons.push("low_resolution");
-  }
+  if ((meta.width || 0) < 720 || (meta.height || 0) < 720) score -= 35;
 
-  if (pixels < 900000) {
-    score -= 25;
-    reasons.push("too_small");
-  }
-
-  const stats = await sharp(imagePath)
+  const stats = await sharp(file)
     .resize(300, 300, { fit: "inside" })
     .greyscale()
     .stats();
@@ -209,132 +193,152 @@ async function getImageQualityScore(imagePath) {
   const mean = stats.channels[0].mean;
   const stdev = stats.channels[0].stdev;
 
-  if (mean < 45) {
-    score -= 25;
-    reasons.push("too_dark");
-  }
+  if (mean < 35) score -= 30;
+  if (mean > 235) score -= 20;
+  if (stdev < 14) score -= 25;
 
-  if (mean > 230) {
-    score -= 20;
-    reasons.push("too_bright");
-  }
-
-  if (stdev < 18) {
-    score -= 30;
-    reasons.push("possibly_blurry_or_flat");
-  }
-
-  return {
-    imagePath,
-    width,
-    height,
-    score,
-    reasons
-  };
+  return score;
 }
 
-async function filterGoodImages(images, minimum = 55) {
-  const checked = [];
-
-  for (const image of images) {
-    try {
-      const quality = await getImageQualityScore(image);
-      checked.push(quality);
-      log(`Quality check: ${image} score=${quality.score} reasons=${quality.reasons.join(",") || "ok"}`);
-    } catch (error) {
-      log(`Quality check failed for ${image}: ${error.message}`);
-    }
-  }
-
-  const good = checked
-    .filter((item) => item.score >= minimum)
-    .sort((a, b) => b.score - a.score)
-    .map((item) => item.imagePath);
-
-  if (good.length > 0) return good;
-
-  log("No high-quality images found. Falling back to original images.");
-  return images;
-}
-
-function getReelSceneFolders() {
-  if (!fs.existsSync(REELS_SOURCE_DIR)) return [];
-
-  return fs
-    .readdirSync(REELS_SOURCE_DIR, { withFileTypes: true })
-    .filter((item) => item.isDirectory() && !item.name.startsWith("_") && !item.name.startsWith("."))
-    .map((item) => path.join(REELS_SOURCE_DIR, item.name))
-    .filter((folder) => findFiles(folder, IMAGE_EXTENSIONS).length >= 2)
-    .sort();
-}
-
-async function pickReelPhotos(count = 3) {
-  const sceneFolders = getReelSceneFolders();
-
-  if (sceneFolders.length > 0) {
-    const folder = sceneFolders[Math.floor(Math.random() * sceneFolders.length)];
-    let images = findFiles(folder, IMAGE_EXTENSIONS);
-    images = await filterGoodImages(images);
-
-    if (images.length >= 2) {
-      const shuffled = [...images].sort(() => Math.random() - 0.5);
-      const selected = shuffled.slice(0, Math.min(count, shuffled.length));
-
-      log(`Selected reel scene folder: ${folder}`);
-      selected.forEach((file, index) => log(`Selected reel photo ${index + 1}: ${file}`));
-
-      return selected;
-    }
-  }
-
-  let allImages = findImageFilesRecursive(REELS_SOURCE_DIR);
-  allImages = await filterGoodImages(allImages);
-
-  if (allImages.length < 2) {
-    throw new Error(`Need at least 2 good images inside ${REELS_SOURCE_DIR}.`);
-  }
-
-  const shuffled = [...allImages].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, Math.min(count, shuffled.length));
-
-  selected.forEach((file, index) => log(`Selected reel photo ${index + 1}: ${file}`));
-
-  return selected;
-}
-
-async function pickOneImage(folder, label) {
-  let images = findFiles(folder, IMAGE_EXTENSIONS);
-  images = await filterGoodImages(images);
+async function getGoodImages() {
+  const images = findFiles(INCOMING_DIR, IMAGE_EXTENSIONS);
 
   if (images.length < 1) {
-    throw new Error(`Need at least 1 image in ${folder} for ${label}. Found 0.`);
+    throw new Error("No photos found in media/incoming");
   }
 
-  const selected = images[Math.floor(Math.random() * images.length)];
-  log(`Selected ${label} image: ${selected}`);
-  return selected;
+  const checked = [];
+
+  for (const img of images) {
+    try {
+      const score = await imageQuality(img);
+      checked.push({ img, score });
+      log(`Image quality: ${path.basename(img)} score=${score}`);
+    } catch {
+      checked.push({ img, score: 50 });
+    }
+  }
+
+  return checked
+    .filter((x) => x.score >= 50)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.img);
 }
 
-function pickMusicRotation() {
-  const musicFiles = findFiles(MUSIC_DIR, MUSIC_EXTENSIONS);
+function pickMusic() {
+  const music = findFiles(MUSIC_DIR, MUSIC_EXTENSIONS);
 
-  if (musicFiles.length < 1) {
-    throw new Error("Need at least 1 music file inside media/music/ for Reels.");
+  if (music.length < 1) {
+    throw new Error("No song found in media/music");
   }
 
   const history = loadHistory();
-  const usedMusic = Array.isArray(history.used_music) ? history.used_music : [];
-  const lastMusic = usedMusic.length > 0 ? usedMusic[usedMusic.length - 1] : null;
+  const last = history.used_music?.[history.used_music.length - 1];
 
-  let candidates = musicFiles;
+  let candidates = music;
 
-  if (musicFiles.length > 1 && lastMusic) {
-    candidates = musicFiles.filter((file) => relativePosix(file) !== lastMusic);
+  if (music.length > 1 && last) {
+    candidates = music.filter((m) => relativePosix(m) !== last);
   }
 
-  const selected = candidates[Math.floor(Math.random() * candidates.length)];
+  const selected = pickRandom(candidates);
   log(`Selected music: ${selected}`);
   return selected;
+}
+
+async function aiPickRelatedImages(images) {
+  const apiKey = getEnv("NVIDIA_API_KEY", false);
+
+  if (!apiKey) {
+    log("NVIDIA_API_KEY missing. Picking first 5 good photos.");
+    return images.slice(0, Math.min(5, images.length));
+  }
+
+  const limited = images.slice(0, 12);
+
+  const content = [
+    {
+      type: "text",
+      text: `
+You are selecting photos for one Instagram Reel.
+
+Task:
+Pick 2 to 5 photos that are most related to each other.
+
+They should match by:
+- same place
+- same outfit
+- same time
+- same activity
+- same vibe
+
+Return only valid JSON:
+{
+  "selected_files": ["filename1.jpg", "filename2.jpg"],
+  "reason": "short reason"
+}
+
+Use exact filenames only.
+`
+    }
+  ];
+
+  for (const img of limited) {
+    content.push({
+      type: "text",
+      text: `Filename: ${path.basename(img)}`
+    });
+
+    content.push({
+      type: "image_url",
+      image_url: {
+        url: rawGithubUrl(img)
+      }
+    });
+  }
+
+  try {
+    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct",
+        messages: [{ role: "user", content }],
+        temperature: 0.1,
+        max_tokens: 300
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.choices) {
+      log(`AI classification failed: ${JSON.stringify(data)}`);
+      return images.slice(0, Math.min(5, images.length));
+    }
+
+    const raw = data.choices[0].message.content.trim();
+    log(`AI selected related photos: ${raw}`);
+
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return images.slice(0, Math.min(5, images.length));
+
+    const parsed = JSON.parse(match[0]);
+    const selectedNames = parsed.selected_files || [];
+
+    const selected = limited.filter((img) => selectedNames.includes(path.basename(img)));
+
+    if (selected.length >= 2) {
+      return selected.slice(0, 5);
+    }
+
+    return images.slice(0, Math.min(5, images.length));
+  } catch (error) {
+    log(`AI classification error: ${error.message}`);
+    return images.slice(0, Math.min(5, images.length));
+  }
 }
 
 async function graphPost(endpoint, params = {}) {
@@ -381,69 +385,42 @@ async function graphGet(endpoint, params = {}) {
   return data;
 }
 
-function getRecentCaptions(limit = 20) {
-  const history = loadHistory();
-
-  if (!Array.isArray(history.posted)) return [];
-
-  return history.posted
-    .filter((item) => item.caption && typeof item.caption === "string")
-    .slice(-limit)
-    .map((item) => item.caption);
-}
-
 function fallbackCaption(mode) {
-  if (mode === "morning_photo") {
-    return "Soft start, clean mood. ✨\n\n#TaraSuri #MorningVibes #LifestyleCreator #SoftGlow #CleanGirlAesthetic";
+  if (mode === "photo") {
+    return "A soft little moment from today. ✨\n\n#TaraSuri #LifestyleCreator #DailyVibes #SoftMood #CreatorLife";
   }
 
-  if (mode === "evening_photo") {
-    return "Evening light, easy mood. ✨\n\n#TaraSuri #EveningVibes #LifestyleCreator #SoftGlam #NightMood";
-  }
-
-  return "Tiny moments, big mood. ✨\n\n#TaraSuri #ReelMood #LifestyleCreator #AestheticVibes #CreatorLife";
+  return "Tiny moments, real mood. ✨\n\n#TaraSuri #ReelMood #LifestyleCreator #AestheticVibes #CreatorLife";
 }
 
-async function analyzePhotosWithVision(imagePaths, mode) {
+async function generateCaption(mode, images) {
   const apiKey = getEnv("NVIDIA_API_KEY", false);
 
-  if (!apiKey) {
-    return "No visual analysis available because NVIDIA_API_KEY is missing.";
-  }
-
-  const visionModel = process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
+  if (!apiKey) return fallbackCaption(mode);
 
   const content = [
     {
       type: "text",
       text: `
-Look at these influencer photos.
+Create one short clean influencer caption for Tara Suri.
 
-Post mode: ${mode}
-
-Describe:
-- location/background
-- outfit style
-- mood/vibe
-- whether the photos feel like same scene/story
-- best caption angle
-- best reel category: travel, home, cafe, office, gym, night, party, casual, morning, evening
-- 5 to 9 clean hashtags
-
-Safety:
-- Do not identify any real person.
-- Do not use adult or explicit wording.
-- Do not describe private body parts.
-- Keep it clean and Instagram/Facebook/YouTube friendly.
+Rules:
+- 1 or 2 short lines
+- 5 to 9 hashtags
+- Match the actual photos
+- Clean lifestyle vibe
+- No adult wording
+- No fake brand deal
+- Return only final caption
 `
     }
   ];
 
-  for (const imagePath of imagePaths) {
+  for (const img of images.slice(0, 5)) {
     content.push({
       type: "image_url",
       image_url: {
-        url: rawGithubUrl(imagePath)
+        url: rawGithubUrl(img)
       }
     });
   }
@@ -456,109 +433,175 @@ Safety:
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: visionModel,
+        model: process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct",
         messages: [{ role: "user", content }],
-        temperature: 0.35,
-        max_tokens: 700
+        temperature: 0.7,
+        max_tokens: 250
       })
     });
 
     const data = await response.json();
 
-    if (!response.ok || !data.choices) {
-      log(`NVIDIA vision error: ${JSON.stringify(data)}`);
-      return "No visual analysis available.";
-    }
+    if (!response.ok || !data.choices) return fallbackCaption(mode);
 
-    return data.choices[0].message.content.trim() || "No visual analysis available.";
-  } catch (error) {
-    log(`NVIDIA vision failed: ${error.message}`);
-    return "No visual analysis available.";
+    return data.choices[0].message.content.trim() || fallbackCaption(mode);
+  } catch {
+    return fallbackCaption(mode);
   }
 }
 
-async function generateCaption(mode, imagePathOrPaths) {
-  const apiKey = getEnv("NVIDIA_API_KEY", false);
+async function createPhotoImage(input, output) {
+  await sharp(input)
+    .rotate()
+    .resize(PHOTO_WIDTH, PHOTO_HEIGHT, {
+      fit: "cover",
+      position: "attention"
+    })
+    .jpeg({ quality: 95 })
+    .toFile(output);
+}
 
-  if (!apiKey) {
-    log("NVIDIA_API_KEY missing. Using fallback caption.");
-    return fallbackCaption(mode);
+async function createReelFrame(input, output) {
+  await sharp(input)
+    .rotate()
+    .resize(REEL_WIDTH, REEL_HEIGHT, {
+      fit: "cover",
+      position: "attention"
+    })
+    .jpeg({ quality: 95 })
+    .toFile(output);
+}
+
+async function createReel(images, music, output) {
+  const frames = [];
+
+  for (let i = 0; i < images.length; i++) {
+    const frame = path.join(GENERATED_DIR, `frame_${Date.now()}_${i}.jpg`);
+    await createReelFrame(images[i], frame);
+    frames.push(frame);
   }
 
-  const images = Array.isArray(imagePathOrPaths) ? imagePathOrPaths : [imagePathOrPaths];
-  const visualAnalysis = await analyzePhotosWithVision(images, mode);
-  const recentCaptions = getRecentCaptions(20);
+  const perImageDuration = 2.2;
+  const transitionDuration = 0.35;
+  const totalDuration = Math.max(8, images.length * perImageDuration);
 
-  log("Visual analysis:");
-  log(visualAnalysis);
+  const args = ["-y"];
 
-  const recentCaptionText =
-    recentCaptions.length > 0
-      ? recentCaptions.map((caption, index) => `${index + 1}. ${caption}`).join("\n")
-      : "No previous captions yet.";
+  for (const frame of frames) {
+    args.push("-loop", "1", "-t", String(perImageDuration + 0.5), "-i", frame);
+  }
 
-  const prompt = `
-Create one short clean influencer caption for an influencer named Tara Suri.
+  args.push("-stream_loop", "-1", "-i", music);
 
-Post mode: ${mode}
+  let filter = "";
 
-Visual analysis:
-${visualAnalysis}
+  for (let i = 0; i < frames.length; i++) {
+    filter += `[${i}:v]scale=${REEL_WIDTH}:${REEL_HEIGHT},setsar=1,fps=${FPS},format=yuv420p,trim=duration=${perImageDuration + 0.5},setpts=PTS-STARTPTS[v${i}];`;
+  }
 
-Last 20 captions:
-${recentCaptionText}
+  if (frames.length === 1) {
+    filter += `[v0]trim=duration=${totalDuration},setpts=PTS-STARTPTS[v]`;
+  } else {
+    filter += `[v0][v1]xfade=transition=fade:duration=${transitionDuration}:offset=${perImageDuration}[x1];`;
 
-Rules:
-- Match the actual visual vibe
-- Short: 1 or 2 lines only
-- Clean influencer vibe
-- Hinglish + English mix is okay
-- No long paragraph
-- No robotic CTA
-- Do not repeat old captions
-- Use only 5 to 9 hashtags
-- No adult explicit content
-- Do not say AI-generated
-- Do not claim fake brand partnership
-- Return only final caption text
-`;
+    for (let i = 2; i < frames.length; i++) {
+      const previous = i === 2 ? "[x1]" : `[x${i - 1}]`;
+      const current = `[v${i}]`;
+      const outputLabel = i === frames.length - 1 ? "[v]" : `[x${i}]`;
+      const offset = perImageDuration * i;
 
-  try {
-    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: process.env.NVIDIA_MODEL || "meta/llama-3.1-70b-instruct",
-        messages: [
-          {
-            role: "system",
-            content: "You write short, clean, natural influencer captions based on visual analysis and caption history."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.85,
-        max_tokens: 280
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.choices) {
-      log(`NVIDIA caption error: ${JSON.stringify(data)}`);
-      return fallbackCaption(mode);
+      filter += `${previous}${current}xfade=transition=fade:duration=${transitionDuration}:offset=${offset}${outputLabel};`;
     }
 
-    return data.choices[0].message.content.trim() || fallbackCaption(mode);
-  } catch (error) {
-    log(`NVIDIA caption failed: ${error.message}`);
-    return fallbackCaption(mode);
+    if (frames.length === 2) {
+      filter = filter.replace("[x1];", "[v];");
+    }
   }
+
+  const audioIndex = frames.length;
+
+  args.push(
+    "-filter_complex",
+    filter,
+    "-map",
+    "[v]",
+    "-map",
+    `${audioIndex}:a`,
+    "-t",
+    String(totalDuration),
+    "-shortest",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "22",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-movflags",
+    "+faststart",
+    output
+  );
+
+  log("Creating simple reel: related photos + fade transition + song.");
+  log("No zoom. No blur. No text.");
+
+  await execFileAsync("ffmpeg", args, {
+    maxBuffer: 1024 * 1024 * 50
+  });
+
+  for (const frame of frames) {
+    safeDelete(frame);
+  }
+}
+
+async function preparePhoto() {
+  const images = await getGoodImages();
+  const selected = images[0];
+
+  const caption = await generateCaption("photo", [selected]);
+  const output = path.join(GENERATED_DIR, `photo_${Date.now()}.jpg`);
+
+  await createPhotoImage(selected, output);
+
+  savePending({
+    type: "photo",
+    post_file: relativePosix(output),
+    original_images: [relativePosix(selected)],
+    caption
+  });
+
+  log("Prepared photo post.");
+}
+
+async function prepareReel() {
+  const images = await getGoodImages();
+
+  if (images.length < 2) {
+    throw new Error("Need at least 2 photos in media/incoming to make reel.");
+  }
+
+  const selected = await aiPickRelatedImages(images);
+  const music = pickMusic();
+  const caption = await generateCaption("reel", selected);
+
+  const output = path.join(GENERATED_DIR, `reel_${Date.now()}.mp4`);
+
+  await createReel(selected, music, output);
+
+  savePending({
+    type: "reel",
+    post_file: relativePosix(output),
+    original_images: selected.map(relativePosix),
+    music_used: relativePosix(music),
+    caption
+  });
+
+  log("Prepared reel post.");
 }
 
 async function testAccounts() {
@@ -572,395 +615,72 @@ async function testAccounts() {
   log(`Instagram OK: ${JSON.stringify(ig)}`);
 }
 
-async function createInstagramSafeImage(sourcePath, outputPath) {
-  await sharp(sourcePath)
-    .rotate()
-    .resize(1080, 1350, {
-      fit: "cover",
-      position: "attention"
-    })
-    .jpeg({ quality: 95 })
-    .toFile(outputPath);
-
-  log(`Created full-frame Instagram photo without blur: ${outputPath}`);
-}
-
-async function createFullFrameImage(sourcePath, outputPath, width = 1080, height = 1920) {
-  await sharp(sourcePath)
-    .rotate()
-    .resize(width, height, {
-      fit: "cover",
-      position: "attention"
-    })
-    .modulate({
-      brightness: 1.02,
-      saturation: 1.06
-    })
-    .sharpen({
-      sigma: 0.6,
-      m1: 0.7,
-      m2: 0.25
-    })
-    .jpeg({ quality: 95 })
-    .toFile(outputPath);
-}
-
-function pickTransitionStyle() {
-  const styles = [
-    {
-      name: "aircraft_hatch_sunrise",
-      xfade: "circleopen",
-      filter: "eq=contrast=1.08:saturation=1.16:brightness=0.02,vignette=PI/8"
-    },
-    {
-      name: "camera_fly_through",
-      xfade: "zoomin",
-      filter: "eq=contrast=1.06:saturation=1.12:brightness=0.015,vignette=PI/6"
-    },
-    {
-      name: "portal_open",
-      xfade: "circleopen",
-      filter: "eq=contrast=1.1:saturation=1.15:brightness=0.02"
-    },
-    {
-      name: "smooth_creator_cut",
-      xfade: "smoothleft",
-      filter: "eq=contrast=1.04:saturation=1.08:brightness=0.01"
-    },
-    {
-      name: "travel_vlog_slide",
-      xfade: "slideright",
-      filter: "eq=contrast=1.05:saturation=1.12:brightness=0.01"
-    },
-    {
-      name: "night_life_flash",
-      xfade: "fadeblack",
-      filter: "eq=contrast=1.12:saturation=1.15:brightness=0.015"
-    }
-  ];
-
-  return styles[Math.floor(Math.random() * styles.length)];
-}
-
-async function createReelFromPhotos(imagePaths, musicPath, outputPath) {
-  const stamp = Date.now();
-  const selected = imagePaths.slice(0, Math.min(3, imagePaths.length));
-  const frames = [];
-
-  for (let i = 0; i < selected.length; i++) {
-    const frame = path.join(REELS_OUTPUT_ROOT, `frame_${stamp}_${i + 1}.jpg`);
-    await createFullFrameImage(selected[i], frame, 1080, 1920);
-    frames.push(frame);
-  }
-
-  const transition = pickTransitionStyle();
-
-  const inputs = [];
-  for (const frame of frames) {
-    inputs.push("-loop", "1", "-t", "5", "-i", frame);
-  }
-
-  inputs.push("-stream_loop", "-1", "-i", musicPath);
-
-  let filter = "";
-  const preparedLabels = [];
-
-  for (let i = 0; i < frames.length; i++) {
-    const directionZoom =
-      i % 2 === 0
-        ? "zoompan=z='min(1.00+0.0008*on,1.045)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
-        : "zoompan=z='max(1.045-0.0008*on,1.00)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'";
-
-    filter += `[${i}:v]scale=1080:1920,setsar=1,fps=${REEL_FPS},format=yuv420p,${transition.filter},${directionZoom}:d=${5 * REEL_FPS}:s=1080x1920:fps=${REEL_FPS},trim=duration=5,setpts=PTS-STARTPTS[v${i}];`;
-    preparedLabels.push(`[v${i}]`);
-  }
-
-  if (frames.length === 2) {
-    filter += `${preparedLabels[0]}${preparedLabels[1]}xfade=transition=${transition.xfade}:duration=1:offset=4,trim=duration=${REEL_DURATION_SECONDS},setpts=PTS-STARTPTS[v]`;
-  } else {
-    filter += `${preparedLabels[0]}${preparedLabels[1]}xfade=transition=${transition.xfade}:duration=1:offset=3.5[x1];`;
-    filter += `[x1]${preparedLabels[2]}xfade=transition=smoothleft:duration=1:offset=7,trim=duration=${REEL_DURATION_SECONDS},setpts=PTS-STARTPTS[v]`;
-  }
-
-  const audioIndex = frames.length;
-
-  const args = [
-    "-y",
-    ...inputs,
-    "-filter_complex",
-    filter,
-    "-map",
-    "[v]",
-    "-map",
-    `${audioIndex}:a`,
-    "-t",
-    String(REEL_DURATION_SECONDS),
-    "-shortest",
-    "-c:v",
-    "libx264",
-    "-preset",
-    "veryfast",
-    "-crf",
-    "21",
-    "-pix_fmt",
-    "yuv420p",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "+faststart",
-    outputPath
-  ];
-
-  log("Creating 3-photo cinematic Reel...");
-  log(`Transition style: ${transition.name}`);
-  log("Full-frame 9:16 enabled.");
-  log("Blur background disabled.");
-  log("Story/Snapchat export enabled.");
-
-  await execFileAsync("ffmpeg", args, {
-    maxBuffer: 1024 * 1024 * 40
-  });
-
-  for (const frame of frames) safeDelete(frame);
-
-  log(`Created Reel video: ${outputPath}`);
-  return transition.name;
-}
-
-async function copyForStoryAndSnapchat(reelPath) {
-  const stamp = Date.now();
-
-  const storyPath = path.join(STORIES_OUTPUT_ROOT, `story_ready_${stamp}.mp4`);
-  const snapPath = path.join(SNAPCHAT_OUTPUT_ROOT, `snapchat_ready_${stamp}.mp4`);
-  const latestSnapPath = path.join(SNAPCHAT_OUTPUT_ROOT, `latest_snapchat_ready.mp4`);
-
-  fs.copyFileSync(reelPath, storyPath);
-  fs.copyFileSync(reelPath, snapPath);
-  fs.copyFileSync(reelPath, latestSnapPath);
-
-  log(`Story-ready export: ${storyPath}`);
-  log(`Snapchat-ready export: ${snapPath}`);
-
-  return {
-    story_video: relativePosix(storyPath),
-    snapchat_video: relativePosix(snapPath),
-    latest_snapchat_video: relativePosix(latestSnapPath)
-  };
-}
-
-async function preparePhotoPost(mode) {
-  const folder = mode === "morning_photo" ? MORNING_DIR : EVENING_DIR;
-  const label = mode === "morning_photo" ? "morning" : "evening";
-
-  const originalImage = await pickOneImage(folder, label);
-  const caption = await generateCaption(mode, originalImage);
-
-  const stamp = Date.now();
-  const instagramImage = path.join(IG_READY_ROOT, `${mode}_${stamp}.jpg`);
-
-  await createInstagramSafeImage(originalImage, instagramImage);
-
-  savePending({
-    type: "photo",
-    mode,
-    created_at: new Date().toISOString(),
-    caption,
-    original_image: relativePosix(originalImage),
-    instagram_image: relativePosix(instagramImage),
-    approval_required: APPROVAL_MODE
-  });
-
-  log("Pending photo post saved.");
-}
-
-async function prepareReelPost() {
-  const reelPhotos = await pickReelPhotos(3);
-  const music = pickMusicRotation();
-  const caption = await generateCaption("reel", reelPhotos);
-
-  const stamp = Date.now();
-  const reelVideo = path.join(REELS_OUTPUT_ROOT, `reel_${stamp}.mp4`);
-
-  const transitionStyle = await createReelFromPhotos(reelPhotos, music, reelVideo);
-  const exports = await copyForStoryAndSnapchat(reelVideo);
-
-  savePending({
-    type: "reel",
-    mode: "reel",
-    created_at: new Date().toISOString(),
-    caption,
-    transition_style: transitionStyle,
-    original_images: reelPhotos.map(relativePosix),
-    music_used: relativePosix(music),
-    reel_video: relativePosix(reelVideo),
-    ...exports,
-    approval_required: APPROVAL_MODE
-  });
-
-  log("Pending upgraded Reel post saved.");
-}
-
 async function waitForInstagramMedia(containerId) {
-  log(`Waiting for Instagram media processing: ${containerId}`);
-
-  for (let attempt = 1; attempt <= 40; attempt++) {
+  for (let i = 1; i <= 40; i++) {
     const status = await graphGet(containerId, { fields: "status_code,status" });
 
-    log(`Instagram media status attempt ${attempt}: ${JSON.stringify(status)}`);
+    log(`Instagram status ${i}: ${JSON.stringify(status)}`);
 
     if (status.status_code === "FINISHED") return;
+
     if (status.status_code === "ERROR") {
-      throw new Error(`Instagram media processing failed: ${JSON.stringify(status)}`);
+      throw new Error(`Instagram media error: ${JSON.stringify(status)}`);
     }
 
     await sleep(15000);
   }
 
-  throw new Error("Instagram media was not ready after waiting.");
+  throw new Error("Instagram media not ready.");
 }
 
-async function publishInstagramPhoto(imageUrl, caption) {
+async function publishInstagramPhoto(url, caption) {
   const igUserId = getEnv("IG_USER_ID");
 
   const container = await graphPost(`${igUserId}/media`, {
-    image_url: imageUrl,
+    image_url: url,
     caption
   });
 
   await waitForInstagramMedia(container.id);
 
-  const published = await graphPost(`${igUserId}/media_publish`, {
+  return graphPost(`${igUserId}/media_publish`, {
     creation_id: container.id
   });
-
-  log(`Instagram photo published: ${JSON.stringify(published)}`);
-  return published;
 }
 
-async function publishFacebookPhoto(imageUrl, caption) {
-  const fbPageId = getEnv("FB_PAGE_ID");
-
-  const photo = await graphPost(`${fbPageId}/photos`, {
-    url: imageUrl,
-    caption
-  });
-
-  log(`Facebook photo published: ${JSON.stringify(photo)}`);
-  return photo;
-}
-
-async function publishInstagramReel(videoUrl, caption) {
+async function publishInstagramReel(url, caption) {
   const igUserId = getEnv("IG_USER_ID");
 
   const container = await graphPost(`${igUserId}/media`, {
     media_type: "REELS",
-    video_url: videoUrl,
+    video_url: url,
     caption,
     share_to_feed: "true"
   });
 
   await waitForInstagramMedia(container.id);
 
-  const published = await graphPost(`${igUserId}/media_publish`, {
+  return graphPost(`${igUserId}/media_publish`, {
     creation_id: container.id
   });
-
-  log(`Instagram Reel published: ${JSON.stringify(published)}`);
-  return published;
 }
 
-async function publishFacebookVideo(videoUrl, caption) {
+async function publishFacebookPhoto(url, caption) {
   const fbPageId = getEnv("FB_PAGE_ID");
 
-  const video = await graphPost(`${fbPageId}/videos`, {
-    file_url: videoUrl,
+  return graphPost(`${fbPageId}/photos`, {
+    url,
+    caption
+  });
+}
+
+async function publishFacebookVideo(url, caption) {
+  const fbPageId = getEnv("FB_PAGE_ID");
+
+  return graphPost(`${fbPageId}/videos`, {
+    file_url: url,
     description: caption
   });
-
-  log(`Facebook video published: ${JSON.stringify(video)}`);
-  return video;
-}
-
-function getYouTubeOAuthClient() {
-  let clientId = process.env.YOUTUBE_CLIENT_ID || "";
-  let clientSecret = process.env.YOUTUBE_CLIENT_SECRET || "";
-  let refreshToken = process.env.YOUTUBE_REFRESH_TOKEN || "";
-
-  const credentialsPath = path.join(ROOT, "credentials.json");
-  const tokenPath = path.join(ROOT, "token.json");
-
-  if ((!clientId || !clientSecret) && fs.existsSync(credentialsPath)) {
-    const credentials = loadJson(credentialsPath, {});
-    const installed = credentials.installed || credentials.web || {};
-    clientId = clientId || installed.client_id || "";
-    clientSecret = clientSecret || installed.client_secret || "";
-  }
-
-  if (!refreshToken && fs.existsSync(tokenPath)) {
-    const token = loadJson(tokenPath, {});
-    refreshToken = token.refresh_token || "";
-  }
-
-  if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error(
-      "YouTube upload needs YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN or credentials.json + token.json."
-    );
-  }
-
-  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, "http://localhost");
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-
-  return oauth2Client;
-}
-
-async function publishYouTubeShort(videoPath, caption) {
-  if (!ENABLE_YOUTUBE) {
-    log("YouTube upload disabled. Set ENABLE_YOUTUBE=true to enable.");
-    return null;
-  }
-
-  const auth = getYouTubeOAuthClient();
-  const youtube = google.youtube({ version: "v3", auth });
-
-  const titleBase = caption.split("\n")[0].replace(/[#✨]/g, "").trim() || "Tara Suri Shorts";
-  const title = titleBase.length > 85 ? titleBase.slice(0, 85) : titleBase;
-
-  const description = `${caption}\n\n#Shorts #TaraSuri #LifestyleShorts`;
-
-  const response = await youtube.videos.insert({
-    part: ["snippet", "status"],
-    requestBody: {
-      snippet: {
-        title,
-        description,
-        tags: ["Shorts", "Tara Suri", "Lifestyle", "Reels", "AI Influencer"],
-        categoryId: "22"
-      },
-      status: {
-        privacyStatus: process.env.YOUTUBE_PRIVACY_STATUS || "public",
-        selfDeclaredMadeForKids: false
-      }
-    },
-    media: {
-      body: fs.createReadStream(videoPath)
-    }
-  });
-
-  log(`YouTube Short uploaded: ${JSON.stringify(response.data)}`);
-  return response.data;
-}
-
-function safeDelete(filePath) {
-  try {
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      log(`Deleted file: ${filePath}`);
-    }
-  } catch (error) {
-    log(`Delete failed for ${filePath}: ${error.message}`);
-  }
 }
 
 function updateHistory(entry) {
@@ -973,127 +693,95 @@ function updateHistory(entry) {
 
   if (entry.music_used) {
     history.used_music.push(entry.music_used);
-    history.used_music = history.used_music.slice(-30);
+    history.used_music = history.used_music.slice(-20);
   }
 
   saveHistory(history);
 }
 
-async function publishPendingPost() {
-  ensureFiles();
+function safeDelete(file) {
+  try {
+    if (file && fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      log(`Deleted: ${file}`);
+    }
+  } catch (error) {
+    log(`Delete failed: ${file} ${error.message}`);
+  }
+}
 
+async function publishPending() {
   const pending = loadPending();
 
-  if (!pending || !pending.type || !pending.caption) {
-    throw new Error("No pending post found. Run prepare step first.");
+  if (!pending || !pending.type || !pending.post_file) {
+    throw new Error("No pending post found.");
   }
 
-  if (pending.approval_required && APPROVAL_STATUS !== "approved") {
-    log("Approval mode is ON. Post prepared but not published.");
-    log("Set APPROVAL_STATUS=approved and run publish when ready.");
+  if (!shouldAllowPost(pending.type)) {
+    log("Blocked by IST time guard. Prevented wrong-time posting.");
     return;
   }
 
   await testAccounts();
 
+  const localFile = path.join(ROOT, pending.post_file);
+  const url = rawGithubUrl(localFile);
   const caption = pending.caption;
   const results = {};
-  const postedAt = new Date().toISOString();
-
-  log("Generated caption:");
-  log(caption);
 
   if (pending.type === "photo") {
-    const originalPath = path.join(ROOT, pending.original_image);
-    const instagramPath = path.join(ROOT, pending.instagram_image);
-
-    const facebookUrl = rawGithubUrl(originalPath);
-    const instagramUrl = rawGithubUrl(instagramPath);
-
-    results.facebookPhoto = await publishFacebookPhoto(facebookUrl, caption);
-    results.instagramPhoto = await publishInstagramPhoto(instagramUrl, caption);
-
-    updateHistory({
-      type: "photo",
-      mode: pending.mode,
-      posted_at: postedAt,
-      caption,
-      original_image: pending.original_image,
-      instagram_image: pending.instagram_image,
-      results
-    });
-
-    safeDelete(originalPath);
-    safeDelete(instagramPath);
+    results.facebook = await publishFacebookPhoto(url, caption);
+    results.instagram = await publishInstagramPhoto(url, caption);
   }
 
   if (pending.type === "reel") {
-    const reelPath = path.join(ROOT, pending.reel_video);
-
-    if (!fs.existsSync(reelPath)) {
-      throw new Error(`Reel video missing: ${reelPath}`);
-    }
-
-    const reelUrl = rawGithubUrl(reelPath);
-
-    results.facebookVideo = await publishFacebookVideo(reelUrl, caption);
-    results.instagramReel = await publishInstagramReel(reelUrl, caption);
-
-    const youtubeResult = await publishYouTubeShort(reelPath, caption);
-    if (youtubeResult) results.youtubeShort = youtubeResult;
-
-    updateHistory({
-      type: "reel",
-      mode: pending.mode,
-      posted_at: postedAt,
-      caption,
-      transition_style: pending.transition_style || "",
-      original_images: pending.original_images || [],
-      music_used: pending.music_used,
-      reel_video: pending.reel_video,
-      story_video: pending.story_video || "",
-      snapchat_video: pending.snapchat_video || "",
-      results
-    });
-
-    if (Array.isArray(pending.original_images)) {
-      for (const image of pending.original_images) {
-        safeDelete(path.join(ROOT, image));
-      }
-    }
-
-    safeDelete(reelPath);
+    results.facebook = await publishFacebookVideo(url, caption);
+    results.instagram = await publishInstagramReel(url, caption);
   }
 
+  updateHistory({
+    type: pending.type,
+    posted_at: new Date().toISOString(),
+    post_file: pending.post_file,
+    original_images: pending.original_images || [],
+    music_used: pending.music_used || "",
+    caption,
+    results
+  });
+
+  for (const img of pending.original_images || []) {
+    safeDelete(path.join(ROOT, img));
+  }
+
+  safeDelete(localFile);
   clearPending();
-  log("Posting complete.");
+
+  log("Post complete.");
 }
 
 async function main() {
-  ensureFiles();
+  ensureFolders();
 
   const args = process.argv.slice(2);
 
   if (args.includes("--prepare-only")) {
     const mode = detectMode();
 
-    log(`Selected mode: ${mode}`);
+    log(`Mode: ${mode}`);
 
-    if (mode === "morning_photo" || mode === "evening_photo") {
-      await preparePhotoPost(mode);
+    if (mode === "photo") {
+      await preparePhoto();
       return;
     }
 
-    if (mode === "reel" || mode === "story") {
-      await prepareReelPost();
+    if (mode === "reel") {
+      await prepareReel();
       return;
     }
-
-    throw new Error(`Unknown mode: ${mode}`);
   }
 
   if (args.includes("--publish-only")) {
-    await publishPendingPost();
+    await publishPending();
     return;
   }
 
