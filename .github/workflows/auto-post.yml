@@ -22,23 +22,11 @@ on:
           - "true"
 
   schedule:
-    # GitHub cron time is UTC.
-    # IST = UTC + 5:30
-
-    # 7:00 AM IST photo
-    - cron: "30 1 * * *"
-
-    # 10:30 AM IST reel
-    - cron: "0 5 * * *"
-
-    # 1:30 PM IST reel
-    - cron: "0 8 * * *"
-
-    # 5:00 PM IST reel
-    - cron: "30 11 * * *"
-
-    # 7:30 PM IST photo
-    - cron: "0 14 * * *"
+    - cron: "30 1 * * *"     # 7:00 AM IST photo
+    - cron: "0 5 * * *"      # 10:30 AM IST reel
+    - cron: "0 8 * * *"      # 1:30 PM IST reel
+    - cron: "30 11 * * *"    # 5:00 PM IST reel
+    - cron: "0 14 * * *"     # 7:30 PM IST photo
 
 permissions:
   contents: write
@@ -77,32 +65,16 @@ jobs:
       - name: Decide mode
         shell: bash
         run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Schedule: ${{ github.event.schedule }}"
-          echo "Manual mode: ${{ github.event.inputs.mode }}"
-
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             MODE="${{ github.event.inputs.mode }}"
           else
             case "${{ github.event.schedule }}" in
-              "30 1 * * *")
-                MODE="photo"
-                ;;
-              "0 5 * * *")
-                MODE="reel"
-                ;;
-              "0 8 * * *")
-                MODE="reel"
-                ;;
-              "30 11 * * *")
-                MODE="reel"
-                ;;
-              "0 14 * * *")
-                MODE="photo"
-                ;;
-              *)
-                MODE="auto"
-                ;;
+              "30 1 * * *") MODE="photo" ;;
+              "0 5 * * *") MODE="reel" ;;
+              "0 8 * * *") MODE="reel" ;;
+              "30 11 * * *") MODE="reel" ;;
+              "0 14 * * *") MODE="photo" ;;
+              *) MODE="auto" ;;
             esac
           fi
 
@@ -133,16 +105,12 @@ jobs:
 
       - name: Create simple folders
         run: |
-          mkdir -p media/photos
-          mkdir -p media/reels
+          mkdir -p media/incoming
           mkdir -p media/music
           mkdir -p data/generated
 
-          echo "Photos:"
-          find media/photos -maxdepth 2 -type f | sort || true
-
-          echo "Reels:"
-          find media/reels -maxdepth 3 -type f | sort || true
+          echo "Incoming photos:"
+          find media/incoming -maxdepth 1 -type f | sort || true
 
           echo "Music:"
           find media/music -maxdepth 1 -type f | sort || true
@@ -150,7 +118,7 @@ jobs:
       - name: Prepare content
         run: npm run auto-post:prepare
 
-      - name: Commit prepared content
+      - name: Commit prepared content temporarily
         run: |
           git config user.name "ai-influencer-bot"
           git config user.email "actions@github.com"
@@ -170,7 +138,7 @@ jobs:
       - name: Publish content
         run: npm run auto-post:publish
 
-      - name: Commit cleanup/history
+      - name: Commit cleanup and history
         if: always()
         run: |
           git config user.name "ai-influencer-bot"
@@ -181,6 +149,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No cleanup/history changes"
           else
-            git commit -m "Update posted history and cleanup"
+            git commit -m "Delete uploaded media and update history"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
