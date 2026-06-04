@@ -147,7 +147,6 @@ function detectMode() {
   }
 
   const { total } = indiaTime();
-
   const photoTimes = [7 * 60, 19 * 60 + 30];
 
   for (const t of photoTimes) {
@@ -828,6 +827,9 @@ async function publishPending() {
   safeDelete(localFile);
   clearPending();
 
+  log("Uploaded original photos deleted successfully.");
+  log("Generated post file deleted successfully.");
+  log("Pending post cleared.");
   log("Post complete.");
 }
 
