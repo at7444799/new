@@ -1,37 +1,50 @@
-name: AI Influencer Content Manager
+name: Auto Post AI Influencer
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "What should the manager post?"
+        description: "What to post?"
         required: true
         default: "auto"
         type: choice
         options:
           - auto
-          - morning_photo
-          - afternoon_photo
-          - evening_photo
-          - night_photo
+          - photo
           - reel
-          - story
+      force:
+        description: "Force post outside IST time window?"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
   schedule:
-    # GitHub Actions cron is UTC. India time = UTC + 5:30.
-    # Real human style cycle for India time.
-    - cron: "30 1 * * *"   # 7:00 AM IST - morning post
-    - cron: "0 5 * * *"    # 10:30 AM IST - reel / travel recap
-    - cron: "0 8 * * *"    # 1:30 PM IST - afternoon post
-    - cron: "30 11 * * *"  # 5:00 PM IST - reel / golden hour
-    - cron: "0 14 * * *"   # 7:30 PM IST - evening post
-    - cron: "30 16 * * *"  # 10:00 PM IST - night reel/story
+    # GitHub cron time is UTC.
+    # IST = UTC + 5:30
+
+    # 7:00 AM IST photo
+    - cron: "30 1 * * *"
+
+    # 10:30 AM IST reel
+    - cron: "0 5 * * *"
+
+    # 1:30 PM IST reel
+    - cron: "0 8 * * *"
+
+    # 5:00 PM IST reel
+    - cron: "30 11 * * *"
+
+    # 7:30 PM IST photo
+    - cron: "0 14 * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: ai-influencer-content-manager
+  group: auto-post-ai-influencer
   cancel-in-progress: false
 
 jobs:
@@ -49,18 +62,10 @@ jobs:
       NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
       NVIDIA_VISION_MODEL: ${{ secrets.NVIDIA_VISION_MODEL }}
 
-      # Optional. Use a JSON manifest like: {"images":["https://.../1.jpg","https://.../2.jpg"]}
-      CLOUD_IMAGE_MANIFEST_URL: ${{ secrets.CLOUD_IMAGE_MANIFEST_URL }}
-
-      # delete = remove used photos after successful posting. move = move them to media/photos/used.
-      POST_USE_ACTION: delete
-
-      # Optional future hook. Keep none until you add a real image-to-video provider adapter.
-      VIDEO_GENERATION_PROVIDER: none
-      VIDEO_GENERATION_API_KEY: ${{ secrets.VIDEO_GENERATION_API_KEY }}
-
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      FORCE_POST: ${{ github.event.inputs.force || 'false' }}
 
     steps:
       - name: Checkout repo
@@ -69,36 +74,49 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Decide manager mode
+      - name: Decide mode
         shell: bash
         run: |
-          echo "GitHub event: ${{ github.event_name }}"
-          echo "Triggered schedule: ${{ github.event.schedule }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Schedule: ${{ github.event.schedule }}"
+          echo "Manual mode: ${{ github.event.inputs.mode }}"
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             MODE="${{ github.event.inputs.mode }}"
           else
             case "${{ github.event.schedule }}" in
-              "30 1 * * *") MODE="morning_photo" ;;
-              "0 5 * * *") MODE="reel" ;;
-              "0 8 * * *") MODE="afternoon_photo" ;;
-              "30 11 * * *") MODE="reel" ;;
-              "0 14 * * *") MODE="evening_photo" ;;
-              "30 16 * * *") MODE="night_photo" ;;
-              *) MODE="auto" ;;
+              "30 1 * * *")
+                MODE="photo"
+                ;;
+              "0 5 * * *")
+                MODE="reel"
+                ;;
+              "0 8 * * *")
+                MODE="reel"
+                ;;
+              "30 11 * * *")
+                MODE="reel"
+                ;;
+              "0 14 * * *")
+                MODE="photo"
+                ;;
+              *)
+                MODE="auto"
+                ;;
             esac
           fi
 
           echo "MANUAL_MODE=$MODE" >> "$GITHUB_ENV"
           echo "Selected mode: $MODE"
 
-      - name: Show trigger and time
+      - name: Show time
         run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Selected mode: $MANUAL_MODE"
-          echo "Branch: $GITHUB_REF_NAME"
-          echo "UTC time:" && date -u
-          echo "India time:" && TZ=Asia/Kolkata date
+          echo "UTC time:"
+          date -u
+          echo "India time:"
+          TZ=Asia/Kolkata date
+          echo "Mode: $MANUAL_MODE"
+          echo "Force post: $FORCE_POST"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -113,46 +131,56 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create AI manager folders
+      - name: Create simple folders
         run: |
-          mkdir -p media/photos/incoming media/photos/used media/photos/rejected media/photos/planned
-          mkdir -p media/morning media/evening media/reels media/videos media/music
-          mkdir -p media/_ig_ready media/_reels media/_cloud_cache data
-          test -f data/posted_history.json || echo '{"posted":[],"used_music":[]}' > data/posted_history.json
-          test -f data/pending_post.json || echo '{}' > data/pending_post.json
-          echo "Current media files:"
-          find media -maxdepth 4 -type f | sort || true
+          mkdir -p media/photos
+          mkdir -p media/reels
+          mkdir -p media/music
+          mkdir -p data/generated
 
-      - name: Prepare managed content
+          echo "Photos:"
+          find media/photos -maxdepth 2 -type f | sort || true
+
+          echo "Reels:"
+          find media/reels -maxdepth 3 -type f | sort || true
+
+          echo "Music:"
+          find media/music -maxdepth 1 -type f | sort || true
+
+      - name: Prepare content
         run: npm run auto-post:prepare
 
-      - name: Commit prepared media for public raw URLs
+      - name: Commit prepared content
         run: |
-          git config user.name "ai-influencer-manager"
+          git config user.name "ai-influencer-bot"
           git config user.email "actions@github.com"
+
           git add -A media data
+
           if git diff --cached --quiet; then
-            echo "No prepared content changes to commit"
+            echo "No prepared content changes"
           else
-            git commit -m "Prepare managed influencer content"
+            git commit -m "Prepare post content"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
 
-      - name: Wait for GitHub raw media availability
-        run: sleep 45
+      - name: Wait for raw GitHub file
+        run: sleep 35
 
-      - name: Publish managed content
+      - name: Publish content
         run: npm run auto-post:publish
 
-      - name: Commit cleanup and history
+      - name: Commit cleanup/history
         if: always()
         run: |
-          git config user.name "ai-influencer-manager"
+          git config user.name "ai-influencer-bot"
           git config user.email "actions@github.com"
+
           git add -A media data
+
           if git diff --cached --quiet; then
-            echo "No cleanup/history changes to commit"
+            echo "No cleanup/history changes"
           else
-            git commit -m "Update influencer content history"
+            git commit -m "Update posted history and cleanup"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
