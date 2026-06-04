@@ -219,10 +219,16 @@ async function getGoodImages() {
     }
   }
 
-  return checked
+  const good = checked
     .filter((x) => x.score >= 50)
     .sort((a, b) => b.score - a.score)
     .map((x) => x.img);
+
+  if (good.length < 1) {
+    throw new Error("No good quality photos found in media/incoming");
+  }
+
+  return good;
 }
 
 function pickMusic() {
@@ -385,33 +391,95 @@ async function graphGet(endpoint, params = {}) {
   return data;
 }
 
-function fallbackCaption(mode) {
-  if (mode === "photo") {
-    return "A soft little moment from today. ✨\n\n#TaraSuri #LifestyleCreator #DailyVibes #SoftMood #CreatorLife";
+function normalizeHashtag(tag) {
+  return tag
+    .replace(/[^a-zA-Z0-9_#]/g, "")
+    .replace(/^#+/, "#")
+    .trim();
+}
+
+function cleanCaptionOutput(text) {
+  return String(text || "")
+    .replace(/```/g, "")
+    .replace(/^caption:/i, "")
+    .trim();
+}
+
+function enforceRequiredHashtags(caption) {
+  const required = ["#tarasuri", "#tarasuritrend"];
+
+  let clean = cleanCaptionOutput(caption);
+
+  const words = clean.split(/\s+/);
+  const existingTags = words.filter((word) => word.startsWith("#")).map(normalizeHashtag);
+  const nonTagText = words.filter((word) => !word.startsWith("#")).join(" ").trim();
+
+  const hashtagSet = new Set();
+
+  for (const tag of existingTags) {
+    const normalized = normalizeHashtag(tag).toLowerCase();
+
+    if (normalized.length > 1) {
+      hashtagSet.add(normalized);
+    }
   }
 
-  return "Tiny moments, real mood. ✨\n\n#TaraSuri #ReelMood #LifestyleCreator #AestheticVibes #CreatorLife";
+  for (const tag of required) {
+    hashtagSet.add(tag);
+  }
+
+  const finalTags = Array.from(hashtagSet).slice(0, 14);
+
+  return `${nonTagText}\n\n${finalTags.join(" ")}`.trim();
+}
+
+function fallbackCaption(mode) {
+  if (mode === "photo") {
+    return enforceRequiredHashtags(
+      `"Soft moments become memories when the light feels right." ✨\n\n#lifestylecreator #instagood #photooftheday #aestheticvibes #dailyvibes #softgirlstyle #tarasuri #tarasuritrend`
+    );
+  }
+
+  return enforceRequiredHashtags(
+    `"Some days are just little stories stitched together." ✨\n\n#reelsinstagram #trendingreels #reelitfeelit #creatorlife #aestheticreels #lifestylevlog #tarasuri #tarasuritrend`
+  );
 }
 
 async function generateCaption(mode, images) {
   const apiKey = getEnv("NVIDIA_API_KEY", false);
 
-  if (!apiKey) return fallbackCaption(mode);
+  if (!apiKey) {
+    return fallbackCaption(mode);
+  }
 
   const content = [
     {
       type: "text",
       text: `
-Create one short clean influencer caption for Tara Suri.
+Create one SEO-friendly Instagram/Facebook caption for Tara Suri.
+
+Post type: ${mode}
+
+Caption format:
+Line 1: One short quote-style caption related to the actual photo/reel.
+Line 2: Blank line.
+Line 3: SEO-friendly hashtags.
 
 Rules:
-- 1 or 2 short lines
-- 5 to 9 hashtags
-- Match the actual photos
-- Clean lifestyle vibe
-- No adult wording
-- No fake brand deal
-- Return only final caption
+- Caption must be related to the actual image mood, place, outfit, background, and vibe.
+- Caption should feel like a quote, emotional, stylish, natural, and human.
+- Use simple English or soft Hinglish.
+- Do not make it long.
+- No fake brand deal.
+- No adult wording.
+- No "AI generated".
+- Hashtags must be SEO-friendly and discoverable.
+- Use trending-style hashtags related to the image: lifestyle, reels, fashion, travel, cafe, office, daily vlog, aesthetic, creator, India, etc.
+- Must include these two hashtags exactly:
+#tarasuri
+#tarasuritrend
+- Total hashtags: 8 to 14.
+- Return only final caption. No explanation.
 `
     }
   ];
@@ -435,16 +503,20 @@ Rules:
       body: JSON.stringify({
         model: process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct",
         messages: [{ role: "user", content }],
-        temperature: 0.7,
-        max_tokens: 250
+        temperature: 0.75,
+        max_tokens: 300
       })
     });
 
     const data = await response.json();
 
-    if (!response.ok || !data.choices) return fallbackCaption(mode);
+    if (!response.ok || !data.choices) {
+      return fallbackCaption(mode);
+    }
 
-    return data.choices[0].message.content.trim() || fallbackCaption(mode);
+    const caption = data.choices[0].message.content.trim();
+
+    return enforceRequiredHashtags(caption || fallbackCaption(mode));
   } catch {
     return fallbackCaption(mode);
   }
