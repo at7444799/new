@@ -1,1 +1,18 @@
-{}
+{
+  "type": "reel",
+  "mode": "reel",
+  "created_at": "2026-06-04T12:37:29.305Z",
+  "caption": "\"Dil ki dhun, shaam ki roshni. #EveningVibes #UrbanBliss #CityLights #HappinessFound #NightNirvana #DelhiNights #TravelIndia #CityLife\"",
+  "transition_style": "aircraft_hatch_sunrise",
+  "original_images": [
+    "media/reels/evening goa pics/ChatGPT Image Jun 4, 2026, 03_33_13 AM.png",
+    "media/reels/evening goa pics/ChatGPT Image Jun 4, 2026, 03_33_25 AM.png",
+    "media/reels/evening goa pics/ChatGPT Image Jun 4, 2026, 03_33_16 AM.png"
+  ],
+  "music_used": "media/music/music1 (19).mp3",
+  "reel_video": "media/_reels/reel_1780576641144.mp4",
+  "story_video": "media/_stories_ready/story_ready_1780576649302.mp4",
+  "snapchat_video": "media/_snapchat_ready/snapchat_ready_1780576649302.mp4",
+  "latest_snapchat_video": "media/_snapchat_ready/latest_snapchat_ready.mp4",
+  "approval_required": false
+}
