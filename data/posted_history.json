@@ -877,6 +877,29 @@
           "id": "17935867608255107"
         }
       }
+    },
+    {
+      "type": "reel",
+      "mode": "reel",
+      "posted_at": "2026-06-04T06:06:09.681Z",
+      "caption": "\"Raatein, shanti, aur meri chai. #UrbanBliss #CityNights #CozyEvenings #ChaiLove #NightVibes\"",
+      "transition_style": "aircraft_hatch_sunrise",
+      "original_images": [
+        "media/reels/ChatGPT Image Jun 4, 2026, 03_32_56 AM.png",
+        "media/reels/ChatGPT Image Jun 4, 2026, 03_32_52 AM.png"
+      ],
+      "music_used": "media/music/music1 (3).mp3",
+      "reel_video": "media/_reels/reel_1780553115415.mp4",
+      "story_video": "media/_stories_ready/story_ready_1780553121240.mp4",
+      "snapchat_video": "media/_snapchat_ready/snapchat_ready_1780553121240.mp4",
+      "results": {
+        "facebookVideo": {
+          "id": "1333864745339046"
+        },
+        "instagramReel": {
+          "id": "17904319950428706"
+        }
+      }
     }
   ],
   "used_music": [
@@ -896,6 +919,7 @@
     "media/music/music1 (18).mp3",
     "media/music/music1 (14).mp3",
     "media/music/music1 (12).mp3",
-    "media/music/music1 (14).mp3"
+    "media/music/music1 (14).mp3",
+    "media/music/music1 (3).mp3"
   ]
 }
