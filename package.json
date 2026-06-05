@@ -1,16 +1,15 @@
 {
   "name": "creatoros-ai-saas",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "cloudinary-test": "node scripts/cloudinary-test.js",
-    "auto-post:sync-cloud": "node scripts/auto-post.js --sync-cloud",
-    "auto-post:prepare": "node scripts/auto-post.js --prepare-only",
-    "auto-post:publish": "node scripts/auto-post.js --publish-only",
-    "auto-post": "node scripts/auto-post.js --prepare-only && node scripts/auto-post.js --publish-only"
+    "auto-post": "node scripts/auto-post.js",
+    "auto-post:prepare": "node scripts/auto-post.js",
+    "auto-post:publish": "node scripts/auto-post.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -19,8 +18,7 @@
     "react": "latest",
     "react-dom": "latest",
     "cloudinary": "^2.5.1",
-    "sharp": "^0.33.5",
-    "googleapis": "^144.0.0"
+    "sharp": "^0.33.5"
   },
   "devDependencies": {}
 }
