@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import sharp from "sharp";
+import { v2 as cloudinary } from "cloudinary";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
@@ -13,11 +15,7 @@ const ROOT = process.cwd();
 const MEDIA_DIR = path.join(ROOT, "media");
 const INCOMING_DIR = path.join(MEDIA_DIR, "incoming");
 const MUSIC_DIR = path.join(MEDIA_DIR, "music");
-const DATA_DIR = path.join(ROOT, "data");
-const GENERATED_DIR = path.join(DATA_DIR, "generated");
-
-const HISTORY_FILE = path.join(DATA_DIR, "posted_history.json");
-const PENDING_FILE = path.join(DATA_DIR, "pending_post.json");
+const TEMP_DIR = path.join(os.tmpdir(), "tara-suri-auto-post");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MUSIC_EXTENSIONS = [".mp3", ".m4a", ".aac", ".wav"];
@@ -39,16 +37,7 @@ function sleep(ms) {
 function ensureFolders() {
   fs.mkdirSync(INCOMING_DIR, { recursive: true });
   fs.mkdirSync(MUSIC_DIR, { recursive: true });
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.mkdirSync(GENERATED_DIR, { recursive: true });
-
-  if (!fs.existsSync(HISTORY_FILE)) {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify({ posted: [], used_music: [] }, null, 2));
-  }
-
-  if (!fs.existsSync(PENDING_FILE)) {
-    fs.writeFileSync(PENDING_FILE, JSON.stringify({}, null, 2));
-  }
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
 function getEnv(name, required = true, fallback = "") {
@@ -61,36 +50,13 @@ function getEnv(name, required = true, fallback = "") {
   return value;
 }
 
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-function loadHistory() {
-  return readJson(HISTORY_FILE, { posted: [], used_music: [] });
-}
-
-function saveHistory(history) {
-  writeJson(HISTORY_FILE, history);
-}
-
-function loadPending() {
-  return readJson(PENDING_FILE, {});
-}
-
-function savePending(data) {
-  writeJson(PENDING_FILE, data);
-}
-
-function clearPending() {
-  writeJson(PENDING_FILE, {});
+function setupCloudinary() {
+  cloudinary.config({
+    cloud_name: getEnv("CLOUDINARY_CLOUD_NAME"),
+    api_key: getEnv("CLOUDINARY_API_KEY"),
+    api_secret: getEnv("CLOUDINARY_API_SECRET"),
+    secure: true
+  });
 }
 
 function relativePosix(file) {
@@ -237,16 +203,7 @@ function pickMusic() {
     throw new Error("No song found in media/music");
   }
 
-  const history = loadHistory();
-  const last = history.used_music?.[history.used_music.length - 1];
-
-  let candidates = music;
-
-  if (music.length > 1 && last) {
-    candidates = music.filter((m) => relativePosix(m) !== last);
-  }
-
-  const selected = pickRandom(candidates);
+  const selected = pickRandom(music);
   log(`Selected music: ${selected}`);
   return selected;
 }
@@ -265,12 +222,9 @@ async function aiPickRelatedImages(images) {
     {
       type: "text",
       text: `
-You are selecting photos for one Instagram Reel.
+Pick 2 to 5 photos that are most related for one Instagram Reel.
 
-Task:
-Pick 2 to 5 photos that are most related to each other.
-
-They should match by:
+Match by:
 - same place
 - same outfit
 - same time
@@ -282,18 +236,12 @@ Return only valid JSON:
   "selected_files": ["filename1.jpg", "filename2.jpg"],
   "reason": "short reason"
 }
-
-Use exact filenames only.
 `
     }
   ];
 
   for (const img of limited) {
-    content.push({
-      type: "text",
-      text: `Filename: ${path.basename(img)}`
-    });
-
+    content.push({ type: "text", text: `Filename: ${path.basename(img)}` });
     content.push({
       type: "image_url",
       image_url: {
@@ -320,28 +268,22 @@ Use exact filenames only.
     const data = await response.json();
 
     if (!response.ok || !data.choices) {
-      log(`AI classification failed: ${JSON.stringify(data)}`);
       return images.slice(0, Math.min(5, images.length));
     }
 
     const raw = data.choices[0].message.content.trim();
-    log(`AI selected related photos: ${raw}`);
-
     const match = raw.match(/\{[\s\S]*\}/);
+
     if (!match) return images.slice(0, Math.min(5, images.length));
 
     const parsed = JSON.parse(match[0]);
     const selectedNames = parsed.selected_files || [];
-
     const selected = limited.filter((img) => selectedNames.includes(path.basename(img)));
 
-    if (selected.length >= 2) {
-      return selected.slice(0, 5);
-    }
+    if (selected.length >= 2) return selected.slice(0, 5);
 
     return images.slice(0, Math.min(5, images.length));
-  } catch (error) {
-    log(`AI classification error: ${error.message}`);
+  } catch {
     return images.slice(0, Math.min(5, images.length));
   }
 }
@@ -391,23 +333,12 @@ async function graphGet(endpoint, params = {}) {
 }
 
 function normalizeHashtag(tag) {
-  return tag
-    .replace(/[^a-zA-Z0-9_#]/g, "")
-    .replace(/^#+/, "#")
-    .trim();
-}
-
-function cleanCaptionOutput(text) {
-  return String(text || "")
-    .replace(/```/g, "")
-    .replace(/^caption:/i, "")
-    .trim();
+  return tag.replace(/[^a-zA-Z0-9_#]/g, "").replace(/^#+/, "#").trim();
 }
 
 function enforceRequiredHashtags(caption) {
   const required = ["#tarasuri", "#tarasuritrend"];
-
-  let clean = cleanCaptionOutput(caption);
+  const clean = String(caption || "").replace(/```/g, "").replace(/^caption:/i, "").trim();
 
   const words = clean.split(/\s+/);
   const existingTags = words.filter((word) => word.startsWith("#")).map(normalizeHashtag);
@@ -417,39 +348,30 @@ function enforceRequiredHashtags(caption) {
 
   for (const tag of existingTags) {
     const normalized = normalizeHashtag(tag).toLowerCase();
-
-    if (normalized.length > 1) {
-      hashtagSet.add(normalized);
-    }
+    if (normalized.length > 1) hashtagSet.add(normalized);
   }
 
-  for (const tag of required) {
-    hashtagSet.add(tag);
-  }
+  for (const tag of required) hashtagSet.add(tag);
 
-  const finalTags = Array.from(hashtagSet).slice(0, 14);
-
-  return `${nonTagText}\n\n${finalTags.join(" ")}`.trim();
+  return `${nonTagText}\n\n${Array.from(hashtagSet).slice(0, 14).join(" ")}`.trim();
 }
 
 function fallbackCaption(mode) {
   if (mode === "photo") {
     return enforceRequiredHashtags(
-      `"Soft moments become memories when the light feels right." ✨\n\n#lifestylecreator #instagood #photooftheday #aestheticvibes #dailyvibes #softgirlstyle #tarasuri #tarasuritrend`
+      `"Soft moments become memories when the light feels right." ✨\n\n#lifestylecreator #instagood #photooftheday #aestheticvibes #dailyvibes #tarasuri #tarasuritrend`
     );
   }
 
   return enforceRequiredHashtags(
-    `"Some days are just little stories stitched together." ✨\n\n#reelsinstagram #trendingreels #reelitfeelit #creatorlife #aestheticreels #lifestylevlog #tarasuri #tarasuritrend`
+    `"Some days are just little stories stitched together." ✨\n\n#reelsinstagram #trendingreels #reelitfeelit #creatorlife #aestheticreels #tarasuri #tarasuritrend`
   );
 }
 
 async function generateCaption(mode, images) {
   const apiKey = getEnv("NVIDIA_API_KEY", false);
 
-  if (!apiKey) {
-    return fallbackCaption(mode);
-  }
+  if (!apiKey) return fallbackCaption(mode);
 
   const content = [
     {
@@ -457,28 +379,19 @@ async function generateCaption(mode, images) {
       text: `
 Create one SEO-friendly Instagram/Facebook caption for Tara Suri.
 
-Post type: ${mode}
-
-Caption format:
+Format:
 Line 1: One short quote-style caption related to the actual photo/reel.
 Line 2: Blank line.
 Line 3: SEO-friendly hashtags.
 
 Rules:
-- Caption must be related to the actual image mood, place, outfit, background, and vibe.
-- Caption should feel like a quote, emotional, stylish, natural, and human.
-- Use simple English or soft Hinglish.
-- Do not make it long.
+- Must match image mood, outfit, background, and vibe.
+- Caption should feel quote-style, stylish, natural, and human.
 - No fake brand deal.
 - No adult wording.
-- No "AI generated".
-- Hashtags must be SEO-friendly and discoverable.
-- Use trending-style hashtags related to the image: lifestyle, reels, fashion, travel, cafe, office, daily vlog, aesthetic, creator, India, etc.
-- Must include these two hashtags exactly:
-#tarasuri
-#tarasuritrend
+- Must include #tarasuri and #tarasuritrend.
 - Total hashtags: 8 to 14.
-- Return only final caption. No explanation.
+- Return only final caption.
 `
     }
   ];
@@ -509,13 +422,9 @@ Rules:
 
     const data = await response.json();
 
-    if (!response.ok || !data.choices) {
-      return fallbackCaption(mode);
-    }
+    if (!response.ok || !data.choices) return fallbackCaption(mode);
 
-    const caption = data.choices[0].message.content.trim();
-
-    return enforceRequiredHashtags(caption || fallbackCaption(mode));
+    return enforceRequiredHashtags(data.choices[0].message.content.trim() || fallbackCaption(mode));
   } catch {
     return fallbackCaption(mode);
   }
@@ -547,7 +456,7 @@ async function createReel(images, music, output) {
   const frames = [];
 
   for (let i = 0; i < images.length; i++) {
-    const frame = path.join(GENERATED_DIR, `frame_${Date.now()}_${i}.jpg`);
+    const frame = path.join(TEMP_DIR, `frame_${Date.now()}_${i}.jpg`);
     await createReelFrame(images[i], frame);
     frames.push(frame);
   }
@@ -570,8 +479,8 @@ async function createReel(images, music, output) {
     filter += `[${i}:v]scale=${REEL_WIDTH}:${REEL_HEIGHT},setsar=1,fps=${FPS},format=yuv420p,trim=duration=${perImageDuration + 0.5},setpts=PTS-STARTPTS[v${i}];`;
   }
 
-  if (frames.length === 1) {
-    filter += `[v0]trim=duration=${totalDuration},setpts=PTS-STARTPTS[v]`;
+  if (frames.length === 2) {
+    filter += `[v0][v1]xfade=transition=fade:duration=${transitionDuration}:offset=${perImageDuration}[v]`;
   } else {
     filter += `[v0][v1]xfade=transition=fade:duration=${transitionDuration}:offset=${perImageDuration}[x1];`;
 
@@ -580,12 +489,7 @@ async function createReel(images, music, output) {
       const current = `[v${i}]`;
       const outputLabel = i === frames.length - 1 ? "[v]" : `[x${i}]`;
       const offset = perImageDuration * i;
-
       filter += `${previous}${current}xfade=transition=fade:duration=${transitionDuration}:offset=${offset}${outputLabel};`;
-    }
-
-    if (frames.length === 2) {
-      filter = filter.replace("[x1];", "[v];");
     }
   }
 
@@ -618,72 +522,44 @@ async function createReel(images, music, output) {
     output
   );
 
-  log("Creating simple reel: related photos + fade transition + song.");
-  log("No zoom. No blur. No text.");
+  log("Creating temporary reel only in runner.");
+  log("No data/generated. No zoom. No blur. No text.");
 
   await execFileAsync("ffmpeg", args, {
     maxBuffer: 1024 * 1024 * 50
   });
 
-  for (const frame of frames) {
-    safeDelete(frame);
-  }
+  for (const frame of frames) safeDelete(frame);
 }
 
-async function preparePhoto() {
-  const images = await getGoodImages();
-  const selected = images[0];
-
-  const caption = await generateCaption("photo", [selected]);
-  const output = path.join(GENERATED_DIR, `photo_${Date.now()}.jpg`);
-
-  await createPhotoImage(selected, output);
-
-  savePending({
-    type: "photo",
-    post_file: relativePosix(output),
-    original_images: [relativePosix(selected)],
-    caption
+async function uploadToCloudinary(filePath, resourceType) {
+  const result = await cloudinary.uploader.upload(filePath, {
+    resource_type: resourceType,
+    folder: "tara-suri-temp",
+    overwrite: true
   });
 
-  log("Prepared photo post.");
+  log(`Uploaded temporary file: ${result.secure_url}`);
+
+  return {
+    url: result.secure_url,
+    publicId: result.public_id,
+    resourceType
+  };
 }
 
-async function prepareReel() {
-  const images = await getGoodImages();
+async function deleteFromCloudinary(uploaded) {
+  if (!uploaded?.publicId) return;
 
-  if (images.length < 2) {
-    throw new Error("Need at least 2 photos in media/incoming to make reel.");
+  try {
+    await cloudinary.uploader.destroy(uploaded.publicId, {
+      resource_type: uploaded.resourceType
+    });
+
+    log(`Deleted temporary cloud file: ${uploaded.publicId}`);
+  } catch (error) {
+    log(`Cloud delete failed: ${error.message}`);
   }
-
-  const selected = await aiPickRelatedImages(images);
-  const music = pickMusic();
-  const caption = await generateCaption("reel", selected);
-
-  const output = path.join(GENERATED_DIR, `reel_${Date.now()}.mp4`);
-
-  await createReel(selected, music, output);
-
-  savePending({
-    type: "reel",
-    post_file: relativePosix(output),
-    original_images: selected.map(relativePosix),
-    music_used: relativePosix(music),
-    caption
-  });
-
-  log("Prepared reel post.");
-}
-
-async function testAccounts() {
-  const fbPageId = getEnv("FB_PAGE_ID");
-  const igUserId = getEnv("IG_USER_ID");
-
-  const fb = await graphGet(fbPageId, { fields: "id,name" });
-  log(`Facebook Page OK: ${JSON.stringify(fb)}`);
-
-  const ig = await graphGet(igUserId, { fields: "id,username" });
-  log(`Instagram OK: ${JSON.stringify(ig)}`);
 }
 
 async function waitForInstagramMedia(containerId) {
@@ -754,20 +630,15 @@ async function publishFacebookVideo(url, caption) {
   });
 }
 
-function updateHistory(entry) {
-  const history = loadHistory();
+async function testAccounts() {
+  const fbPageId = getEnv("FB_PAGE_ID");
+  const igUserId = getEnv("IG_USER_ID");
 
-  if (!Array.isArray(history.posted)) history.posted = [];
-  if (!Array.isArray(history.used_music)) history.used_music = [];
+  const fb = await graphGet(fbPageId, { fields: "id,name" });
+  log(`Facebook Page OK: ${JSON.stringify(fb)}`);
 
-  history.posted.push(entry);
-
-  if (entry.music_used) {
-    history.used_music.push(entry.music_used);
-    history.used_music = history.used_music.slice(-20);
-  }
-
-  saveHistory(history);
+  const ig = await graphGet(igUserId, { fields: "id,username" });
+  log(`Instagram OK: ${JSON.stringify(ig)}`);
 }
 
 function safeDelete(file) {
@@ -781,85 +652,89 @@ function safeDelete(file) {
   }
 }
 
-async function publishPending() {
-  const pending = loadPending();
+async function runPhoto() {
+  const images = await getGoodImages();
+  const selected = images[0];
+  const caption = await generateCaption("photo", [selected]);
+  const tempPhoto = path.join(TEMP_DIR, `photo_${Date.now()}.jpg`);
 
-  if (!pending || !pending.type || !pending.post_file) {
-    throw new Error("No pending post found.");
+  let uploaded = null;
+
+  try {
+    await createPhotoImage(selected, tempPhoto);
+    uploaded = await uploadToCloudinary(tempPhoto, "image");
+
+    await testAccounts();
+
+    await publishFacebookPhoto(uploaded.url, caption);
+    await publishInstagramPhoto(uploaded.url, caption);
+
+    safeDelete(selected);
+    log("Used photo deleted from media/incoming.");
+  } finally {
+    safeDelete(tempPhoto);
+    if (uploaded) await deleteFromCloudinary(uploaded);
+  }
+}
+
+async function runReel() {
+  const images = await getGoodImages();
+
+  if (images.length < 2) {
+    throw new Error("Need at least 2 photos in media/incoming to make reel.");
   }
 
-  if (!shouldAllowPost(pending.type)) {
-    log("Blocked by IST time guard. Prevented wrong-time posting.");
-    return;
+  const selected = await aiPickRelatedImages(images);
+  const music = pickMusic();
+  const caption = await generateCaption("reel", selected);
+  const tempReel = path.join(TEMP_DIR, `reel_${Date.now()}.mp4`);
+
+  let uploaded = null;
+
+  try {
+    await createReel(selected, music, tempReel);
+    uploaded = await uploadToCloudinary(tempReel, "video");
+
+    await testAccounts();
+
+    await publishFacebookVideo(uploaded.url, caption);
+    await publishInstagramReel(uploaded.url, caption);
+
+    for (const img of selected) {
+      safeDelete(img);
+    }
+
+    log("Used reel photos deleted from media/incoming.");
+  } finally {
+    safeDelete(tempReel);
+    if (uploaded) await deleteFromCloudinary(uploaded);
   }
-
-  await testAccounts();
-
-  const localFile = path.join(ROOT, pending.post_file);
-  const url = rawGithubUrl(localFile);
-  const caption = pending.caption;
-  const results = {};
-
-  if (pending.type === "photo") {
-    results.facebook = await publishFacebookPhoto(url, caption);
-    results.instagram = await publishInstagramPhoto(url, caption);
-  }
-
-  if (pending.type === "reel") {
-    results.facebook = await publishFacebookVideo(url, caption);
-    results.instagram = await publishInstagramReel(url, caption);
-  }
-
-  updateHistory({
-    type: pending.type,
-    posted_at: new Date().toISOString(),
-    post_file: pending.post_file,
-    original_images: pending.original_images || [],
-    music_used: pending.music_used || "",
-    caption,
-    results
-  });
-
-  for (const img of pending.original_images || []) {
-    safeDelete(path.join(ROOT, img));
-  }
-
-  safeDelete(localFile);
-  clearPending();
-
-  log("Uploaded original photos deleted successfully.");
-  log("Generated post file deleted successfully.");
-  log("Pending post cleared.");
-  log("Post complete.");
 }
 
 async function main() {
   ensureFolders();
+  setupCloudinary();
 
-  const args = process.argv.slice(2);
+  const mode = detectMode();
 
-  if (args.includes("--prepare-only")) {
-    const mode = detectMode();
-
-    log(`Mode: ${mode}`);
-
-    if (mode === "photo") {
-      await preparePhoto();
-      return;
-    }
-
-    if (mode === "reel") {
-      await prepareReel();
-      return;
-    }
-  }
-
-  if (args.includes("--publish-only")) {
-    await publishPending();
+  if (!shouldAllowPost(mode)) {
+    log("Blocked by IST time guard. Prevented wrong-time posting.");
     return;
   }
 
-  throw new Error("Use --prepare-only or --publish-only");
+  log(`Final mode: ${mode}`);
+
+  if (mode === "photo") {
+    await runPhoto();
+    return;
+  }
+
+  if (mode === "reel") {
+    await runReel();
+    return;
+  }
+
+  throw new Error(`Unknown mode: ${mode}`);
 }
 
 main().catch((error) => {
