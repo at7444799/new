@@ -13,7 +13,7 @@ on:
           - photo
           - reel
       force:
-        description: "Force post outside IST time window?"
+        description: "Force post outside IST time?"
         required: true
         default: "false"
         type: choice
@@ -49,6 +49,10 @@ jobs:
       NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
       NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL }}
       NVIDIA_VISION_MODEL: ${{ secrets.NVIDIA_VISION_MODEL }}
+
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -87,8 +91,6 @@ jobs:
           date -u
           echo "India time:"
           TZ=Asia/Kolkata date
-          echo "Mode: $MANUAL_MODE"
-          echo "Force post: $FORCE_POST"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -103,52 +105,25 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create simple folders
+      - name: Create folders
         run: |
           mkdir -p media/incoming
           mkdir -p media/music
-          mkdir -p data/generated
 
-          echo "Incoming photos:"
-          find media/incoming -maxdepth 1 -type f | sort || true
+      - name: Create and publish instantly
+        run: npm run auto-post
 
-          echo "Music:"
-          find media/music -maxdepth 1 -type f | sort || true
-
-      - name: Prepare content
-        run: npm run auto-post:prepare
-
-      - name: Commit prepared content temporarily
-        run: |
-          git config user.name "ai-influencer-bot"
-          git config user.email "actions@github.com"
-
-          git add -A media data
-
-          if git diff --cached --quiet; then
-            echo "No prepared content changes"
-          else
-            git commit -m "Prepare post content"
-            git push origin HEAD:"$GITHUB_REF_NAME"
-          fi
-
-      - name: Wait for raw GitHub file
-        run: sleep 35
-
-      - name: Publish content
-        run: npm run auto-post:publish
-
-      - name: Commit cleanup and history
+      - name: Commit deleted used media
         if: always()
         run: |
           git config user.name "ai-influencer-bot"
           git config user.email "actions@github.com"
 
-          git add -A media data
+          git add -A media
 
           if git diff --cached --quiet; then
-            echo "No cleanup/history changes"
+            echo "No media cleanup changes"
           else
-            git commit -m "Delete uploaded media and update history"
+            git commit -m "Delete uploaded media"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
